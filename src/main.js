@@ -11,7 +11,11 @@ import {
 	LABEL_SK,
 	SK,
 } from "./constants.js";
-import { enrichWithAres, fetchAres } from "./parsers/aresCz.js";
+import {
+	buildAresOnlyRecord,
+	enrichWithAres,
+	fetchAres,
+} from "./parsers/aresCz.js";
 import { parseFinstatSk } from "./parsers/finstatSk.js";
 import {
 	buildMspRecord,
@@ -127,21 +131,33 @@ const czCrawler = czQueue
 			headless: true,
 			async requestHandler({ page, request }) {
 				const { ico } = request.userData;
-				// MSP je Nuxt SPA — server vrací HTTP 404 pro všechny URL, obsah ale renderuje Vue.
-				// Nesmíme proto rozhodovat podle HTTP statusu, ale podle DOM obsahu po hydraci.
+				// ARES voláme paralelně s MSP — když MSP nemá subjekt (státní org, VŠ,
+				// příspěvkové organizace nejsou v obchodním rejstříku), ARES poslouží jako
+				// primární zdroj a záznam se uloží i bez MSP dat.
+				const aresPromise = fetchAres(ico);
+				let mspRecord = null;
 				try {
 					await waitForMspContent(page);
+					const rows = await extractMspRows(page);
+					mspRecord = buildMspRecord(rows, ico, request.url);
 				} catch (err) {
 					log.debug(
-						`CZ ${ico}: SPA neshydrovala s daty (${err.message}) — IČO pravděpodobně neexistuje v rejstříku.`,
+						`CZ ${ico}: MSP rejstřík nedostupný (${err.message}). Zkusíme ARES jako fallback.`,
+					);
+				}
+				const aresData = await aresPromise;
+				// Pokud MSP nedal jméno (subjekt vymazaný z OR, nebo státní org bez záznamu)
+				// a ARES taky nic, IČO je neplatné. Jinak ARES poslouží jako primary.
+				if (!mspRecord?.name && !aresData?.name) {
+					log.softFail(
+						`CZ ${ico}: nenalezeno v MSP ani v ARES — IČO pravděpodobně neexistuje.`,
 					);
 					return;
 				}
-				const rows = await extractMspRows(page);
-				const mspRecord = buildMspRecord(rows, ico, request.url);
-				// Enrichment z ARES (insolvence flag, DIČ, NACE, datumAktualizace, kraj/okres).
-				const aresData = await fetchAres(ico);
-				const record = enrichWithAres(mspRecord, aresData);
+				const baseRecord = mspRecord?.name
+					? mspRecord
+					: buildAresOnlyRecord(ico, request.url, aresData);
+				const record = enrichWithAres(baseRecord, aresData);
 				await datasetWriter(record);
 			},
 			failedRequestHandler({ request }) {

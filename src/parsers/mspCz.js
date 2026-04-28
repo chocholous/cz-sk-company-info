@@ -144,6 +144,7 @@ const parseBusinessActivities = (value) => {
 };
 
 const DIRECTOR_LABELS = new Set([
+	// Obchodní společnosti
 	"Jednatel",
 	"Předseda představenstva",
 	"Místopředseda představenstva",
@@ -153,6 +154,26 @@ const DIRECTOR_LABELS = new Set([
 	"Člen dozorčí rady",
 	"Likvidátor",
 	"Prokurista",
+	// Spolky, SVJ, družstva, nadace
+	"Předseda výboru",
+	"Místopředseda výboru",
+	"Člen výboru",
+	"Předseda spolku",
+	"Místopředseda spolku",
+	"Statutární orgán",
+	"Pověřený zástupce",
+	"Předseda",
+	"Místopředseda",
+	"Tajemník",
+	"Hospodář",
+	// Nadace a ústavy
+	"Ředitel",
+	"Předseda správní rady",
+	"Místopředseda správní rady",
+	"Člen správní rady",
+	"Předseda dozorčí komise",
+	"Člen dozorčí komise",
+	"Revizor",
 ]);
 
 export const buildMspRecord = (rows, ico, sourceUrl) => {
