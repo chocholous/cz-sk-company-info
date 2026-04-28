@@ -1,0 +1,21 @@
+# This file tells Git which files shouldn't be added to source control
+
+.DS_Store
+.idea
+.vscode
+.zed
+node_modules
+storage
+
+# Added by Apify CLI
+.venv
+
+# Secrets (template-only verzi commitujeme jako .env.tpl)
+.env
+.env.local
+*.env
+!.env.tpl
+
+# Crawlee storage
+crawlee_storage
+apify_storage

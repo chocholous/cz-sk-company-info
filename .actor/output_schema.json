@@ -1,0 +1,12 @@
+{
+	"actorOutputSchemaVersion": 1,
+	"title": "CZ/SK Company Info — výstup",
+	"properties": {
+		"dataset": {
+			"type": "string",
+			"title": "Dataset s firmami",
+			"description": "Stažené záznamy o firmách (1 řádek = 1 IČO).",
+			"template": "{{links.apiDefaultDatasetUrl}}/items?clean=true"
+		}
+	}
+}

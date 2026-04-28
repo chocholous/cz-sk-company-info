@@ -1,0 +1,220 @@
+{
+	"actorSpecification": 1,
+	"fields": {
+		"type": "object",
+		"properties": {
+			"ico": { "type": "string" },
+			"country": { "type": "string", "enum": ["cz", "sk"] },
+			"name": { "type": ["string", "null"] },
+			"legalForm": { "type": ["string", "null"] },
+			"establishedAt": { "type": ["string", "null"] },
+			"dissolvedAt": { "type": ["string", "null"] },
+			"dic": { "type": ["string", "null"] },
+			"icDph": { "type": ["string", "null"] },
+			"address": {
+				"type": ["object", "null"],
+				"properties": {
+					"full": { "type": ["string", "null"] },
+					"street": { "type": ["string", "null"] },
+					"zip": { "type": ["string", "null"] },
+					"city": { "type": ["string", "null"] }
+				}
+			},
+			"classification": {
+				"type": ["object", "null"],
+				"properties": {
+					"nace": { "type": ["string", "null"] },
+					"naceDescription": { "type": ["string", "null"] },
+					"naceCodes": {
+						"type": ["array", "null"],
+						"items": { "type": "string" }
+					},
+					"employeeCategory": { "type": ["string", "null"] },
+					"region": { "type": ["string", "null"] },
+					"district": { "type": ["string", "null"] },
+					"spisovaZnacka": { "type": ["string", "null"] }
+				}
+			},
+			"financials": {
+				"type": ["object", "null"],
+				"properties": {
+					"year": { "type": ["integer", "null"] },
+					"revenue": { "type": ["number", "null"] },
+					"profit": { "type": ["number", "null"] },
+					"assets": { "type": ["number", "null"] },
+					"equity": { "type": ["number", "null"] },
+					"registeredCapital": { "type": ["string", "null"] },
+					"currency": { "type": ["string", "null"] }
+				}
+			},
+			"financialHistory": {
+				"type": ["object", "null"],
+				"description": "Až 5letá historie finančních ukazatelů (jen SK z finstat).",
+				"properties": {
+					"revenue": {
+						"type": ["array", "null"],
+						"items": { "type": "object" }
+					},
+					"profit": {
+						"type": ["array", "null"],
+						"items": { "type": "object" }
+					},
+					"assets": {
+						"type": ["array", "null"],
+						"items": { "type": "object" }
+					},
+					"equity": {
+						"type": ["array", "null"],
+						"items": { "type": "object" }
+					},
+					"totalRevenue": {
+						"type": ["array", "null"],
+						"items": { "type": "object" }
+					}
+				}
+			},
+			"businessActivities": {
+				"type": ["object", "null"],
+				"properties": {
+					"license": { "type": ["string", "null"] },
+					"activities": {
+						"type": ["array", "null"],
+						"items": { "type": "string" }
+					}
+				}
+			},
+			"directors": {
+				"type": ["array", "null"],
+				"description": "Statutární orgán (jen CZ z MSP — finstat zdarma neukazuje).",
+				"items": {
+					"type": "object",
+					"properties": {
+						"role": { "type": "string" },
+						"name": { "type": ["string", "null"] },
+						"birthDate": { "type": ["string", "null"] },
+						"address": { "type": ["string", "null"] },
+						"sinceDate": { "type": ["string", "null"] }
+					}
+				}
+			},
+			"partners": {
+				"type": ["array", "null"],
+				"description": "Společníci a jejich podíly (jen CZ z MSP).",
+				"items": {
+					"type": "object",
+					"properties": {
+						"name": { "type": ["string", "null"] },
+						"ico": { "type": ["string", "null"] },
+						"isPerson": { "type": "boolean" },
+						"address": { "type": ["string", "null"] },
+						"shares": {
+							"type": "array",
+							"items": {
+								"type": "object",
+								"properties": {
+									"investment": { "type": ["number", "null"] },
+									"paidPercent": { "type": ["number", "null"] },
+									"fraction": { "type": ["string", "null"] },
+									"type": { "type": ["string", "null"] }
+								}
+							}
+						}
+					}
+				}
+			},
+			"warnings": {
+				"type": ["object", "null"],
+				"description": "Stavové vlajky (insolvence, dluhy, dočasná ochrana).",
+				"properties": {
+					"hasDebts": { "type": ["boolean", "null"] },
+					"hasInsolvency": { "type": ["boolean", "null"] },
+					"hasTemporaryProtection": { "type": ["boolean", "null"] }
+				}
+			},
+			"vatStatus": {
+				"type": ["object", "null"],
+				"description": "DPH plátce (jen CZ z ARES).",
+				"properties": {
+					"active": { "type": ["boolean", "null"] },
+					"stateCode": { "type": ["string", "null"] }
+				}
+			},
+			"registrace": {
+				"type": ["object", "null"],
+				"description": "Stavy v registrech CZ (z ARES). Hodnoty: AKTIVNI / NEEXISTUJICI / ZRUSENI ...",
+				"properties": {
+					"ros": { "type": ["string", "null"] },
+					"vr": { "type": ["string", "null"] },
+					"res": { "type": ["string", "null"] },
+					"rzp": { "type": ["string", "null"] },
+					"dph": { "type": ["string", "null"] },
+					"ir": { "type": ["string", "null"] }
+				}
+			},
+			"dataFreshness": {
+				"type": ["object", "null"],
+				"description": "Časové známky pro audit čerstvosti dat.",
+				"properties": {
+					"aresUpdatedAt": { "type": ["string", "null"] },
+					"scrapedAt": { "type": ["string", "null"] }
+				}
+			},
+			"sourceUrl": { "type": "string" },
+			"scrapedAt": { "type": "string" }
+		},
+		"required": ["ico", "country", "sourceUrl", "scrapedAt"]
+	},
+	"views": {
+		"overview": {
+			"title": "Přehled",
+			"transformation": {
+				"fields": [
+					"ico",
+					"country",
+					"name",
+					"legalForm",
+					"establishedAt",
+					"address",
+					"classification",
+					"financials",
+					"warnings",
+					"sourceUrl",
+					"scrapedAt"
+				],
+				"flatten": ["address", "classification", "financials", "warnings"]
+			},
+			"display": {
+				"component": "table",
+				"properties": {
+					"ico": { "label": "IČO", "format": "text" },
+					"country": { "label": "Země", "format": "text" },
+					"name": { "label": "Název", "format": "text" },
+					"legalForm": { "label": "Právní forma", "format": "text" },
+					"establishedAt": { "label": "Vznik", "format": "date" },
+					"address.full": { "label": "Sídlo", "format": "text" },
+					"address.city": { "label": "Město", "format": "text" },
+					"classification.nace": { "label": "NACE", "format": "text" },
+					"classification.naceDescription": {
+						"label": "Odvětví",
+						"format": "text"
+					},
+					"financials.revenue": { "label": "Tržby", "format": "number" },
+					"financials.profit": { "label": "Zisk", "format": "number" },
+					"financials.year": { "label": "Rok", "format": "number" },
+					"warnings.hasInsolvency": {
+						"label": "Insolvence",
+						"format": "boolean"
+					},
+					"warnings.hasDebts": { "label": "Dluhy", "format": "boolean" },
+					"vatStatus.active": { "label": "DPH plátce", "format": "boolean" },
+					"dataFreshness.aresUpdatedAt": {
+						"label": "ARES update",
+						"format": "date"
+					},
+					"sourceUrl": { "label": "Zdroj", "format": "link" },
+					"scrapedAt": { "label": "Staženo", "format": "date" }
+				}
+			}
+		}
+	}
+}

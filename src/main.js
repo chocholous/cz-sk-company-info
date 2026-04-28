@@ -1,0 +1,174 @@
+import { setTimeout as wait } from "node:timers/promises";
+import { CheerioCrawler } from "@crawlee/cheerio";
+import { PlaywrightCrawler } from "@crawlee/playwright";
+import { Actor, log } from "apify";
+
+import {
+	buildUrlCz,
+	buildUrlSk,
+	CZ,
+	LABEL_CZ,
+	LABEL_SK,
+	SK,
+} from "./constants.js";
+import { enrichWithAres, fetchAres } from "./parsers/aresCz.js";
+import { parseFinstatSk } from "./parsers/finstatSk.js";
+import {
+	buildMspRecord,
+	extractMspRows,
+	waitForMspContent,
+} from "./parsers/mspCz.js";
+import { enrichWithRpo, fetchRpo } from "./parsers/rpoSk.js";
+import { normalizeIco } from "./utils.js";
+
+await Actor.init();
+
+Actor.on("aborting", async () => {
+	log.warning("Actor aborting — provádím rychlé ukončení.");
+	await wait(1000);
+	await Actor.exit();
+});
+
+const input = (await Actor.getInput()) ?? {};
+const {
+	icos = [],
+	country = "auto",
+	maxConcurrency = 10,
+	maxRequestRetries = 3,
+	requestTimeoutSecs = 30,
+	proxyConfiguration: proxyInput,
+} = input;
+
+if (!Array.isArray(icos) || icos.length === 0) {
+	throw new Error("Vstup `icos` musí být neprázdné pole IČO.");
+}
+
+const proxyConfiguration = await Actor.createProxyConfiguration(proxyInput);
+log.info(
+	`Vstup: ${icos.length} IČO, country=${country}, concurrency=${maxConcurrency}`,
+);
+
+const skIcos = [];
+const czIcos = [];
+for (const raw of icos) {
+	const ico = normalizeIco(raw);
+	if (country === SK) skIcos.push(ico);
+	else if (country === CZ) czIcos.push(ico);
+	else {
+		skIcos.push(ico);
+		czIcos.push(ico);
+	}
+}
+
+const datasetWriter = async (record) => {
+	if (!record?.name) {
+		log.softFail(
+			`Přeskakuju IČO ${record?.ico} (${record?.country}) — nenalezena firma.`,
+		);
+		return;
+	}
+	await Actor.pushData(record);
+};
+
+// Crawlee `apify run` purguje pouze defaultní storage; named queues přežijí mezi lokálními runy.
+// Použijeme unique názvy per-run (s ID běhu na Apify, fallback na timestamp lokálně), aby každý
+// run dostal čerstvé queues a crawlery si vzájemně nekradly requesty.
+const runTag = process.env.APIFY_ACTOR_RUN_ID ?? `local-${Date.now()}`;
+const skQueue =
+	skIcos.length > 0 ? await Actor.openRequestQueue(`sk-${runTag}`) : null;
+const czQueue =
+	czIcos.length > 0 ? await Actor.openRequestQueue(`cz-${runTag}`) : null;
+
+const skCrawler = skQueue
+	? new CheerioCrawler({
+			requestQueue: skQueue,
+			proxyConfiguration,
+			maxConcurrency,
+			maxRequestRetries,
+			requestHandlerTimeoutSecs: requestTimeoutSecs * 2,
+			navigationTimeoutSecs: requestTimeoutSecs,
+			async requestHandler({ $, body, request, response, proxyInfo }) {
+				const { ico } = request.userData;
+				// finstat.sk vrací HTTP 404 pro neexistující IČO, ale stránka se pořád vyrenderuje
+				// (pretty 404). V auto módu je 404 očekávaný stav — IČO je české → tiše skip.
+				if (response.statusCode === 404) {
+					log.debug(`SK ${ico}: nenalezeno na finstat.sk (HTTP 404).`);
+					return;
+				}
+				if (response.statusCode >= 400) {
+					log.warning(`SK ${ico}: HTTP ${response.statusCode}`);
+					return;
+				}
+				const rawHtml =
+					typeof body === "string" ? body : (body?.toString("utf8") ?? "");
+				const finstatRecord = parseFinstatSk($, ico, request.url, rawHtml);
+				// Enrichment z RPO (data.gov.sk) — fresh dbModificationDate, historie jmen, spisová značka.
+				// Použijeme stejnou proxy URL, kterou Crawlee dal této session (residential rotuje IP per request).
+				const rpoData = await fetchRpo(ico, { proxyUrl: proxyInfo?.url });
+				const record = enrichWithRpo(finstatRecord, rpoData);
+				await datasetWriter(record);
+			},
+			failedRequestHandler({ request }) {
+				log.error(
+					`SK ${request.userData?.ico}: po ${maxRequestRetries} pokusech selhal request.`,
+				);
+			},
+		})
+	: null;
+
+const czCrawler = czQueue
+	? new PlaywrightCrawler({
+			requestQueue: czQueue,
+			proxyConfiguration,
+			maxConcurrency: Math.min(maxConcurrency, 5),
+			maxRequestRetries,
+			requestHandlerTimeoutSecs: requestTimeoutSecs * 3,
+			navigationTimeoutSecs: requestTimeoutSecs * 2,
+			headless: true,
+			async requestHandler({ page, request }) {
+				const { ico } = request.userData;
+				// MSP je Nuxt SPA — server vrací HTTP 404 pro všechny URL, obsah ale renderuje Vue.
+				// Nesmíme proto rozhodovat podle HTTP statusu, ale podle DOM obsahu po hydraci.
+				try {
+					await waitForMspContent(page);
+				} catch (err) {
+					log.debug(
+						`CZ ${ico}: SPA neshydrovala s daty (${err.message}) — IČO pravděpodobně neexistuje v rejstříku.`,
+					);
+					return;
+				}
+				const rows = await extractMspRows(page);
+				const mspRecord = buildMspRecord(rows, ico, request.url);
+				// Enrichment z ARES (insolvence flag, DIČ, NACE, datumAktualizace, kraj/okres).
+				const aresData = await fetchAres(ico);
+				const record = enrichWithAres(mspRecord, aresData);
+				await datasetWriter(record);
+			},
+			failedRequestHandler({ request }) {
+				log.error(
+					`CZ ${request.userData?.ico}: po ${maxRequestRetries} pokusech selhal request.`,
+				);
+			},
+		})
+	: null;
+
+const skRequests = skIcos.map((ico) => ({
+	url: buildUrlSk(ico),
+	label: LABEL_SK,
+	userData: { ico, country: SK },
+}));
+
+const czRequests = czIcos.map((ico) => ({
+	url: buildUrlCz(ico),
+	label: LABEL_CZ,
+	userData: { ico, country: CZ },
+}));
+
+if (skQueue) await skQueue.addRequests(skRequests);
+if (czQueue) await czQueue.addRequests(czRequests);
+
+await Promise.all([skCrawler?.run(), czCrawler?.run()].filter(Boolean));
+
+log.info("Hotovo.");
+
+await Actor.exit();
