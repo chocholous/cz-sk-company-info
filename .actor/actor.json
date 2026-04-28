@@ -3,9 +3,10 @@
 	"actorSpecification": 1,
 	"name": "cz-sk-company-info",
 	"title": "CZ/SK Company Info — IČO Lookup",
-	"description": "Stahuje veřejně dostupné údaje o firmách v Česku (MSP rejstřík + ARES) a na Slovensku (finstat.sk + RPO data.gov.sk) podle IČO. Strukturovaný JSON s identifikací, adresou, statutáry, společníky, financemi a insolvenčním flagem.",
+	"description": "Lookup firem v ČR a SR podle IČO. Strukturovaný JSON ze 4 oficiálních zdrojů: identifikace, adresa, NACE, statutáři, společníci s podíly, 5letá finanční historie, insolvence flag, DPH status, čerstvost dat.",
 	"version": "0.1",
 	"buildTag": "latest",
+	"categories": ["BUSINESS", "LEAD_GENERATION", "DEVELOPER_TOOLS"],
 	"meta": {
 		"templateId": "js-empty",
 		"generatedBy": "Claude Code with Claude Opus 4.7"

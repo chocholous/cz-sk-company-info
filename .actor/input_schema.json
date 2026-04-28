@@ -1,48 +1,49 @@
 {
 	"title": "CZ/SK Company Info — vstup",
-	"description": "Stahování veřejných údajů o firmách v ČR a SR podle IČO.",
+	"description": "Stahování veřejných údajů o firmách v ČR a SR podle IČO. Pole IČO + volby země a výkonu.",
 	"type": "object",
 	"schemaVersion": 1,
 	"properties": {
 		"icos": {
 			"title": "Seznam IČO",
 			"type": "array",
-			"description": "Pole IČO firem k zpracování. CZ i SK IČO mají 8 číslic. Levostranně doplníme nuly.",
+			"description": "IČO firem, které chcete stáhnout. CZ i SK IČO mají 8 číslic — chybějící nuly doplníme zleva (např. \"151700\" → \"00151700\"). Validujte si IČO předem; neexistující se v daném registru nenajdou a vytvoří se prázdný záznam.",
 			"editor": "stringList",
-			"prefill": ["35757442", "04788290"],
+			"prefill": ["35757442", "04788290", "31322832"],
 			"default": [],
 			"uniqueItems": true,
 			"minItems": 1,
+			"maxItems": 10000,
 			"sectionCaption": "Vstup",
-			"sectionDescription": "Co a odkud stáhnout. Auto-režim zkusí každé IČO v obou zemích a uloží jen relevantní záznam."
+			"sectionDescription": "Které IČO stáhnout a odkud. Auto-režim zkusí každé IČO v obou zemích a uloží jen relevantní záznam — v praxi 2× requesty navíc, ale ušetří vám rozhodování."
 		},
 		"country": {
 			"title": "Země zdroje",
 			"type": "string",
-			"description": "Auto-detekce zkusí každé IČO v obou zemích (CZ i SK). Pro úsporu compute units nastavte explicitně, pokud znáte zemi všech IČO.",
+			"description": "Auto-režim zkusí každé IČO v obou zemích (CZ i SK). Pro úsporu compute units (přibližně poloviční počet requestů) nastavte explicitně, pokud znáte zemi všech IČO.",
 			"editor": "select",
 			"default": "auto",
 			"enum": ["auto", "cz", "sk"],
 			"enumTitles": [
-				"Auto-detekce (CZ + SK)",
-				"Pouze CZ (MSP + ARES)",
-				"Pouze SK (finstat + RPO)"
+				"Auto-detekce (zkusí CZ i SK)",
+				"Pouze ČR (MSP rejstřík + ARES)",
+				"Pouze SR (finstat.sk + RPO data.gov.sk)"
 			]
 		},
 		"maxConcurrency": {
 			"title": "Max paralelních požadavků",
 			"type": "integer",
-			"description": "Kolik IČO zpracovat současně. Vyšší = rychlejší, ale větší riziko rate-limit blokace zdrojů. Doporučeno 3–10.",
+			"description": "Kolik IČO zpracovat současně. Vyšší = rychlejší, ale větší riziko rate-limit blokace zdrojů. Doporučeno 3–10 pro residential proxy, 1–3 bez proxy.",
 			"default": 5,
 			"minimum": 1,
 			"maximum": 50,
 			"sectionCaption": "Výkon a robustnost",
-			"sectionDescription": "Jemné ladění rychlosti vs. spolehlivosti. Default hodnoty fungují pro většinu use-cases."
+			"sectionDescription": "Defaultní hodnoty fungují pro většinu use-cases. Snižte concurrency, pokud vidíte v logu časté HTTP 429 (rate limit)."
 		},
 		"maxRequestRetries": {
 			"title": "Max retry pokusů",
 			"type": "integer",
-			"description": "Kolikrát opakovat neúspěšný request při dočasné chybě (network, 5xx).",
+			"description": "Kolikrát opakovat neúspěšný request při dočasné chybě (network, 5xx, 429). Crawlee používá exponenciální backoff.",
 			"default": 3,
 			"minimum": 0,
 			"maximum": 10
@@ -50,7 +51,7 @@
 		"requestTimeoutSecs": {
 			"title": "Timeout requestu (sekundy)",
 			"type": "integer",
-			"description": "Maximální doba na jeden HTTP request. Pro pomalé sítě zvyšte na 60.",
+			"description": "Maximální doba na jeden HTTP request. Pro pomalé sítě nebo vyšší zátěž zvyšte na 60. CZ subjekty (Playwright render) mají interní 3× násobek.",
 			"default": 30,
 			"minimum": 5,
 			"maximum": 300
@@ -58,14 +59,18 @@
 		"proxyConfiguration": {
 			"title": "Apify Proxy",
 			"type": "object",
-			"description": "Doporučená skupina RESIDENTIAL — rotace IP obchází rate limit RPO (data.gov.sk) a snižuje riziko blokace finstat.sk při vyšší concurrency.",
+			"description": "Doporučená skupina RESIDENTIAL — rotace IP per request obchází rate limit RPO (data.gov.sk) a snižuje riziko blokace finstat.sk při vyšší concurrency. Pro lokální vývoj bez Apify Proxy přístupu nastavte useApifyProxy: false.",
 			"editor": "proxy",
 			"default": {
 				"useApifyProxy": true,
 				"apifyProxyGroups": ["RESIDENTIAL"]
 			},
+			"prefill": {
+				"useApifyProxy": true,
+				"apifyProxyGroups": ["RESIDENTIAL"]
+			},
 			"sectionCaption": "Síť",
-			"sectionDescription": "Proxy konfigurace. Pro lokální běh bez Apify Proxy přístupu nastavte useApifyProxy: false."
+			"sectionDescription": "Proxy konfigurace. Residential proxy zvyšuje cenu runu, ale je nutná pro batch větší než cca 10 IČO."
 		}
 	},
 	"required": ["icos"]

@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0B2447"/>
+      <stop offset="50%" stop-color="#11457E"/>
+      <stop offset="100%" stop-color="#19376D"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#D7141A"/>
+      <stop offset="33%" stop-color="#FFFFFF"/>
+      <stop offset="66%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#11457E"/>
+    </linearGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0V40" fill="none" stroke="#FFFFFF" stroke-opacity="0.05" stroke-width="1"/>
+    </pattern>
+  </defs>
+
+  <rect width="1280" height="640" fill="url(#bg)"/>
+  <rect width="1280" height="640" fill="url(#grid)"/>
+
+  <g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, sans-serif">
+    <text x="80" y="180" font-size="32" font-weight="500" fill="#A0AEC0" letter-spacing="8">APIFY · ACTOR</text>
+    <text x="80" y="290" font-size="96" font-weight="800" fill="#FFFFFF" letter-spacing="-2">CZ/SK Company Info</text>
+    <text x="80" y="370" font-size="38" font-weight="400" fill="#CBD5E0">Veřejná data o firmách v ČR a SR podle IČO</text>
+
+    <g transform="translate(80 460)" font-size="22" font-weight="500" fill="#90CDF4">
+      <text>finstat.sk · MSP rejstřík · ARES · RPO data.gov.sk</text>
+    </g>
+
+    <g transform="translate(80 540)" font-size="20" font-weight="500" fill="#FFFFFF">
+      <rect x="0" y="-30" width="180" height="44" rx="22" fill="#11457E" stroke="#FFFFFF" stroke-opacity="0.2"/>
+      <text x="90" y="0" text-anchor="middle">Statutáři</text>
+      <rect x="200" y="-30" width="180" height="44" rx="22" fill="#11457E" stroke="#FFFFFF" stroke-opacity="0.2"/>
+      <text x="290" y="0" text-anchor="middle">Společníci</text>
+      <rect x="400" y="-30" width="180" height="44" rx="22" fill="#11457E" stroke="#FFFFFF" stroke-opacity="0.2"/>
+      <text x="490" y="0" text-anchor="middle">5letá historie</text>
+      <rect x="600" y="-30" width="180" height="44" rx="22" fill="#11457E" stroke="#FFFFFF" stroke-opacity="0.2"/>
+      <text x="690" y="0" text-anchor="middle">Insolvence flag</text>
+    </g>
+  </g>
+
+  <g transform="translate(960 320)" text-anchor="middle">
+    <circle r="220" fill="#FFFFFF" fill-opacity="0.04" stroke="#FFFFFF" stroke-opacity="0.15"/>
+    <text font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, sans-serif" font-weight="800">
+      <tspan x="0" y="-30" font-size="140" fill="#FFFFFF" letter-spacing="6">CZ</tspan>
+      <tspan x="0" y="120" font-size="140" fill="#FFFFFF" letter-spacing="6">SK</tspan>
+    </text>
+    <line x1="-100" y1="-10" x2="100" y2="-10" stroke="url(#accent)" stroke-width="6"/>
+  </g>
+</svg>

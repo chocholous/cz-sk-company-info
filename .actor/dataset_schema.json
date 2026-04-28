@@ -167,6 +167,7 @@
 	"views": {
 		"overview": {
 			"title": "Přehled",
+			"description": "Základní pohled — identifikace, adresa, klasifikace, poslední finanční rok, varování.",
 			"transformation": {
 				"fields": [
 					"ico",
@@ -213,6 +214,112 @@
 					},
 					"sourceUrl": { "label": "Zdroj", "format": "link" },
 					"scrapedAt": { "label": "Staženo", "format": "date" }
+				}
+			}
+		},
+		"finance": {
+			"title": "Finance",
+			"description": "Finanční ukazatele za poslední rok — pro analýzu výkonnosti a rating.",
+			"transformation": {
+				"fields": [
+					"ico",
+					"country",
+					"name",
+					"financials",
+					"vatStatus",
+					"dataFreshness"
+				],
+				"flatten": ["financials", "vatStatus", "dataFreshness"]
+			},
+			"display": {
+				"component": "table",
+				"properties": {
+					"ico": { "label": "IČO", "format": "text" },
+					"name": { "label": "Název", "format": "text" },
+					"country": { "label": "Země", "format": "text" },
+					"financials.year": { "label": "Rok", "format": "number" },
+					"financials.revenue": { "label": "Tržby", "format": "number" },
+					"financials.profit": { "label": "Zisk", "format": "number" },
+					"financials.assets": { "label": "Aktíva", "format": "number" },
+					"financials.equity": {
+						"label": "Vlastní kapitál",
+						"format": "number"
+					},
+					"financials.registeredCapital": {
+						"label": "Základní kapitál",
+						"format": "text"
+					},
+					"financials.currency": { "label": "Měna", "format": "text" },
+					"vatStatus.active": { "label": "DPH plátce", "format": "boolean" },
+					"dataFreshness.aresUpdatedAt": {
+						"label": "ARES update",
+						"format": "date"
+					},
+					"dataFreshness.rpoUpdatedAt": {
+						"label": "RPO update",
+						"format": "date"
+					}
+				}
+			}
+		},
+		"people": {
+			"title": "Statutáři & společníci",
+			"description": "Vedení a vlastnická struktura (jen CZ z MSP rejstříku).",
+			"transformation": {
+				"fields": ["ico", "country", "name", "directors", "partners"]
+			},
+			"display": {
+				"component": "table",
+				"properties": {
+					"ico": { "label": "IČO", "format": "text" },
+					"name": { "label": "Název", "format": "text" },
+					"country": { "label": "Země", "format": "text" },
+					"directors": { "label": "Statutární orgán", "format": "array" },
+					"partners": { "label": "Společníci", "format": "array" }
+				}
+			}
+		},
+		"redFlags": {
+			"title": "Red flags",
+			"description": "Rizikové signály — insolvence, dluhy, dočasná ochrana, neaktivní DPH, výmaz.",
+			"transformation": {
+				"fields": [
+					"ico",
+					"country",
+					"name",
+					"warnings",
+					"vatStatus",
+					"registrace",
+					"dissolvedAt",
+					"dataFreshness"
+				],
+				"flatten": ["warnings", "vatStatus", "registrace", "dataFreshness"]
+			},
+			"display": {
+				"component": "table",
+				"properties": {
+					"ico": { "label": "IČO", "format": "text" },
+					"name": { "label": "Název", "format": "text" },
+					"country": { "label": "Země", "format": "text" },
+					"warnings.hasInsolvency": {
+						"label": "Insolvence",
+						"format": "boolean"
+					},
+					"warnings.hasDebts": { "label": "Dluhy", "format": "boolean" },
+					"warnings.hasTemporaryProtection": {
+						"label": "Dočasná ochrana",
+						"format": "boolean"
+					},
+					"vatStatus.active": { "label": "DPH plátce", "format": "boolean" },
+					"registrace.ir": {
+						"label": "Insolvenční rejstřík",
+						"format": "text"
+					},
+					"dissolvedAt": { "label": "Datum zániku", "format": "date" },
+					"dataFreshness.aresUpdatedAt": {
+						"label": "ARES update",
+						"format": "date"
+					}
 				}
 			}
 		}
