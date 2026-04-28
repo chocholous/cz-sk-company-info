@@ -1,6 +1,6 @@
 {
 	"name": "cz-sk-company-info",
-	"version": "0.1.0",
+	"version": "0.1.4",
 	"type": "module",
 	"description": "Apify Actor — stahuje veřejné údaje o firmách v ČR a SR podle IČO ze čtyř oficiálních zdrojů (finstat.sk, MSP, ARES, RPO).",
 	"engines": {

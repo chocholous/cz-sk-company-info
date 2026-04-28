@@ -22,6 +22,7 @@
 			},
 			"classification": {
 				"type": ["object", "null"],
+				"description": "Klasifikační údaje. CZ: nace = primární NACE z ARES (CZ-NACE 2008), naceCodes = pole všech přidělených oborů (CZ specialita), region/district = kraj/okres, spisovaZnacka z MSP. SK: nace = NACE z finstat (typicky 4-místný), spisovaZnacka z RPO. employeeCategory bývá vyplněn jen pro některé velké SK firmy.",
 				"properties": {
 					"nace": { "type": ["string", "null"] },
 					"naceDescription": { "type": ["string", "null"] },
@@ -37,6 +38,7 @@
 			},
 			"financials": {
 				"type": ["object", "null"],
+				"description": "Finanční ukazatele za poslední rok. SK firmy: revenue/profit/assets/equity z finstat (typicky a.s./s.r.o. se zveřejněnou závěrkou). CZ firmy: jen registeredCapital (základní kapitál) z MSP rejstříku. Subjekty bez finanční povinnosti (SVJ, spolky, malé s.r.o., státní org) mají null.",
 				"properties": {
 					"year": { "type": ["integer", "null"] },
 					"revenue": { "type": ["number", "null"] },
@@ -49,7 +51,7 @@
 			},
 			"financialHistory": {
 				"type": ["object", "null"],
-				"description": "Až 5letá historie finančních ukazatelů (jen SK z finstat).",
+				"description": "Až 5letá historie finančních ukazatelů. JEN PRO SK subjekty se zveřejněnou účetní závěrkou (typicky a.s. a větší s.r.o.). CZ ekvivalent zdarma neexistuje. Každé pole je pole bodů [{year, value}] seřazené chronologicky.",
 				"properties": {
 					"revenue": {
 						"type": ["array", "null"],
@@ -75,6 +77,7 @@
 			},
 			"businessActivities": {
 				"type": ["object", "null"],
+				"description": "Předmět podnikání / činnosti. CZ: živnostenská licence (license) + obory činnosti (activities[]). SK: jen activities[] pro subjekty s aktivními předměty podnikania. Nadace, spolky, SVJ a státní org nemívají vyplněno.",
 				"properties": {
 					"license": { "type": ["string", "null"] },
 					"activities": {
@@ -85,7 +88,7 @@
 			},
 			"directors": {
 				"type": ["array", "null"],
-				"description": "Statutární orgán (jen CZ z MSP — finstat zdarma neukazuje).",
+				"description": "Statutární orgán. POUZE CZ z MSP rejstříku — finstat.sk pro SK skrývá za Premium. Role se liší podle typu: Jednatel (s.r.o.), Předseda/Člen představenstva (a.s.), Předseda/Člen výboru (SVJ, spolky, družstva), Předseda/Člen správní rady (nadace, ústavy), Likvidátor, Prokurista. Státní organizace, ministerstva a veřejné VŠ statutáře z ARES nemají.",
 				"items": {
 					"type": "object",
 					"properties": {
@@ -99,7 +102,7 @@
 			},
 			"partners": {
 				"type": ["array", "null"],
-				"description": "Společníci a jejich podíly (jen CZ z MSP).",
+				"description": "Společníci/vlastníci a jejich podíly. POUZE CZ s.r.o. (a vybrané právní formy s viditelnou vlastnickou strukturou). Akcionáři velkých CZ a.s. zde nejsou — jsou neveřejní v CDCP. SK subjekty zde nemají data (finstat skrývá za Premium). Každý společník má pole shares[] s detaily podílu.",
 				"items": {
 					"type": "object",
 					"properties": {
@@ -124,7 +127,7 @@
 			},
 			"warnings": {
 				"type": ["object", "null"],
-				"description": "Stavové vlajky (insolvence, dluhy, dočasná ochrana).",
+				"description": "Stavové vlajky pro KYC/due-diligence. CZ: hasInsolvency je odvozeno z ARES (stavZdrojeIr). SK: hasInsolvency/hasDebts/hasTemporaryProtection se čte z finstat.sk veřejných flagů. Pole je null jen pokud nelze zjistit ani z jednoho zdroje.",
 				"properties": {
 					"hasDebts": { "type": ["boolean", "null"] },
 					"hasInsolvency": { "type": ["boolean", "null"] },
@@ -133,7 +136,7 @@
 			},
 			"vatStatus": {
 				"type": ["object", "null"],
-				"description": "DPH plátce (jen CZ z ARES).",
+				"description": "Status DPH plátce. POUZE CZ z ARES (stavZdrojeDph). active=true znamená aktivní plátce DPH. SK ekvivalent (icDph) je v hlavním poli identifikace.",
 				"properties": {
 					"active": { "type": ["boolean", "null"] },
 					"stateCode": { "type": ["string", "null"] }
@@ -141,7 +144,7 @@
 			},
 			"registrace": {
 				"type": ["object", "null"],
-				"description": "Stavy v registrech CZ (z ARES). Hodnoty: AKTIVNI / NEEXISTUJICI / ZRUSENI ...",
+				"description": "Stavy v 6 CZ registrech z ARES — POUZE pro CZ subjekty. Hodnoty: AKTIVNI / NEEXISTUJICI / ZRUSENI. ROS=Registr osob, VR=Veřejný rejstřík, RES=Registr ekonomických subjektů, RZP=Registr živnost. podnikání, DPH=Plátci DPH, IR=Insolvenční rejstřík (zdroj insolvence flagu).",
 				"properties": {
 					"ros": { "type": ["string", "null"] },
 					"vr": { "type": ["string", "null"] },
@@ -151,11 +154,28 @@
 					"ir": { "type": ["string", "null"] }
 				}
 			},
+			"nameHistory": {
+				"type": ["array", "null"],
+				"description": "Historie obchodních jmen. POUZE SK z RPO data.gov.sk. Každý záznam má {name, validFrom, validTo}. validTo:null = aktuálně platné jméno. Užitečné pro audit fúzí, přejmenování a změn značky.",
+				"items": {
+					"type": "object",
+					"properties": {
+						"name": { "type": ["string", "null"] },
+						"validFrom": { "type": ["string", "null"] },
+						"validTo": { "type": ["string", "null"] }
+					}
+				}
+			},
+			"registrationOffice": {
+				"type": ["string", "null"],
+				"description": "Rejstříkový soud / úřad evidence. POUZE SK z RPO. Pro CZ je analog v classification.spisovaZnacka."
+			},
 			"dataFreshness": {
 				"type": ["object", "null"],
-				"description": "Časové známky pro audit čerstvosti dat.",
+				"description": "Audit čerstvosti dat. aresUpdatedAt = poslední synchronizace ARES (CZ, typicky denní). rpoUpdatedAt = poslední změna v RPO data.gov.sk (SK, jen při faktické změně subjektu — může být i staré měsíce/roky pro stabilní firmy). scrapedAt = čas tohoto runu actoru.",
 				"properties": {
 					"aresUpdatedAt": { "type": ["string", "null"] },
+					"rpoUpdatedAt": { "type": ["string", "null"] },
 					"scrapedAt": { "type": ["string", "null"] }
 				}
 			},

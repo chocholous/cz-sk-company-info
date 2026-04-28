@@ -66,6 +66,31 @@ Stahuje **veřejné údaje o firmách v Česku a na Slovensku** podle IČO. Komb
 
 > **Poznámka k financím:** finstat.sk publikuje finanční ukazatele jen u firem, které mají povinnost zveřejnit účetní závěrku ve Sbírce listin (typicky **a.s.**, **nadace**, větší **s.r.o.**). Malé s.r.o. a živnostníci budou mít `financials: null`.
 
+## Co dostanete pro jaký typ subjektu
+
+Pokrytí závisí na typu subjektu a registru, ze kterého actor čerpá. Tabulka odráží **empirický test reálných firem** (ne teoretické možnosti):
+
+| Typ subjektu | Identif. + adresa | NACE | Statutáři | Společníci | Finance | 5letá historie | Warnings | Audit |
+|---|---|---|---|---|---|---|---|---|
+| 🇨🇿 **a.s.** velká (ČEZ) | ✅ | ✅ | ✅ představenstvo | — | kapitál | — | ✅ | ✅ ARES |
+| 🇨🇿 **s.r.o.** (Apify) | ✅ | ✅ | ✅ jednatelé | ✅ s podíly | kapitál | — | ✅ | ✅ ARES |
+| 🇨🇿 **nadace** | ✅ | ✅ | ✅ správní rada | — | — | — | ✅ | ✅ ARES |
+| 🇨🇿 **SVJ** | ✅ | ✅ | ✅ výbor | — | — | — | ✅ | ✅ ARES |
+| 🇨🇿 **spolek** | ✅ | ✅ | ✅ předseda/výbor | — | — | — | ✅ | ✅ ARES |
+| 🇨🇿 **veřejná VŠ / státní org** | ✅ ARES | částečně | — není v MSP | — | — | — | ✅ ARES | ✅ ARES |
+| 🇸🇰 **a.s.** velká (VW, Allianz) | ✅ | ✅ | — finstat ne | — | ✅ kompletní | ✅ 5 let | ✅ flagy | ✅ RPO |
+| 🇸🇰 **s.r.o.** (ESET) | ✅ | ✅ | — finstat ne | — | ✅ kompletní | ✅ 5 let | ✅ | ✅ RPO |
+| 🇸🇰 **nadácia** | ✅ | ✅ | — | — | rok jen | — | ✅ | ✅ RPO |
+
+**Co je systémově nemožné** (nedáme to ani my, ani konkurence ze zdarma zdrojů):
+- Akcionáři velkých CZ a.s. — jsou neveřejní v CDCP
+- 5letá finanční historie pro CZ subjekty — finstat.sk je jen pro SK; ČR ekvivalent zdarma neexistuje
+- Statutáři pro SK subjekty — finstat skrývá za Premium
+
+**Co naopak dostanete navíc** oproti default expectation:
+- **CZ státní organizace, ministerstva, veřejné VŠ, příspěvkové organizace** — actor je dohledá přes ARES API i když nejsou v obchodním rejstříku (od v0.1.3)
+- **SVJ a spolky** — statutární orgán z MSP rejstříku se správně rozparsuje na role (Předseda, Členové výboru atd.)
+
 ## Use-cases
 
 ### 💼 Sales prospecting & lead enrichment
@@ -192,10 +217,18 @@ Apify Console → Actor → Webhooks → spustí se na `ACTOR.RUN.SUCCEEDED` a p
 
 - 🐢 **Pro malou kontrolu** (1–5 IČO) drž `concurrency: 3` — minimalizuje rate-limit RPO.
 - 🚀 **Pro velký batch** zapni `RESIDENTIAL` proxy a `concurrency: 5–10` — rotace IP obejde per-IP limity.
-- 🇨🇿 **Pro 100 % CZ data** nastav `country: "cz"` — ušetříš ~50 % requestů.
+- 🇨🇿 **Pro 100 % CZ data** nastav `country: "cz"` — ušetříš ~50 % requestů a vyhneš se IČO collision (níže).
 - 📅 **Pro recurring monitoring** vytvoř Apify Schedule (cron) + Webhook → tvoje aplikace.
 - 🐛 Pokud `name` vychází `null`, IČO buď neexistuje, nebo cílová stránka změnila strukturu — nahlas v záložce Issues.
 - 💾 **Pro AI agenty** mapuj `financialHistory.revenue[]` jako sparkline data, `partners[]` jako graph nodes.
+
+### ⚠️ IČO collision v auto módu
+
+CZ a SK IČO mají stejný formát (8 číslic). Některá CZ IČO **náhodou existují i v SK** registru, ale představují úplně jinou firmu. Příklad: IČO `45274649` = ČEZ a.s. v ČR, ale taky *ABC - servis, s. r. o.* v SK.
+
+V auto módu actor uloží **oba záznamy** (každý s vlastním `country`). To může zkreslit data v CRM, pokud importuješ jen podle IČO bez kontroly země.
+
+**Řešení:** Pokud máš seznam IČO z jedné země, **vždy nastav `country` explicitně** (`cz` nebo `sk`). Auto mód nech jen pro skutečně smíšené dávky, kdy potřebuješ pokrytí obou zemí.
 
 ## FAQ
 

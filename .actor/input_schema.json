@@ -20,14 +20,14 @@
 		"country": {
 			"title": "Země zdroje",
 			"type": "string",
-			"description": "Auto-režim zkusí každé IČO v obou zemích (CZ i SK). Pro úsporu compute units (přibližně poloviční počet requestů) nastavte explicitně, pokud znáte zemi všech IČO.",
+			"description": "DOPORUČENÍ: pokud znáte zemi všech IČO, nastavte explicitně. CZ a SK mají oba 8místné IČO a některá čísla se náhodou shodují s úplně jinou firmou ve druhé zemi (např. CZ 45274649 = ČEZ, SK 45274649 = ABC servis). V auto módu se uloží oba záznamy a CRM import bez kontroly země může dostat duplicity. Auto mód zkusí každé IČO v obou zemích (~2× requestů); CZ-only / SK-only ušetří compute units a vyhne se collision.",
 			"editor": "select",
 			"default": "auto",
 			"enum": ["auto", "cz", "sk"],
 			"enumTitles": [
-				"Auto-detekce (zkusí CZ i SK)",
-				"Pouze ČR (MSP rejstřík + ARES)",
-				"Pouze SR (finstat.sk + RPO data.gov.sk)"
+				"Auto-detekce (zkusí CZ i SK, riziko collision)",
+				"Pouze ČR (MSP rejstřík + ARES, doporučeno pro CZ batch)",
+				"Pouze SR (finstat.sk + RPO data.gov.sk, doporučeno pro SK batch)"
 			]
 		},
 		"maxConcurrency": {
