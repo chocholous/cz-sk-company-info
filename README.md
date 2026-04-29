@@ -107,10 +107,3 @@ The `dataFreshness` field on every record shows exact timestamps:
 - `scrapedAt` — when this Actor run fetched the data
 
 In our 11-subject test these timestamps ranged from 2025-07-07 to 2026-04-22, so values for stable companies can be older than the date you run the Actor. Both ARES and RPO update the timestamp only when the subject record actually changes.
-
-## Sources
-
-- [finstat.sk](https://www.finstat.sk) — Slovak financial-legal portal (public part)
-- [verejnerejstriky.msp.gov.cz](https://verejnerejstriky.msp.gov.cz) — Czech commercial registry (Ministry of Justice)
-- [ares.gov.cz](https://ares.gov.cz) — Czech administrative register of economic subjects
-- [data.gov.sk RPO](https://data.gov.sk) — Slovak Register of Legal Entities (CC-BY licence)
