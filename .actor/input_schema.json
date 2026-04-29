@@ -1,57 +1,57 @@
 {
-	"title": "CZ/SK Company Info — vstup",
-	"description": "Stahování veřejných údajů o firmách v ČR a SR podle IČO. Pole IČO + volby země a výkonu.",
+	"title": "CZ/SK Company Info — input",
+	"description": "Lookup public company data in Czech Republic and Slovakia by IČO.",
 	"type": "object",
 	"schemaVersion": 1,
 	"properties": {
 		"icos": {
-			"title": "Seznam IČO",
+			"title": "List of IČOs",
 			"type": "array",
-			"description": "IČO firem, které chcete stáhnout. CZ i SK IČO mají 8 číslic — chybějící nuly doplníme zleva (např. \"151700\" → \"00151700\"). Validujte si IČO předem; neexistující se v daném registru nenajdou a vytvoří se prázdný záznam.",
+			"description": "Business identifiers to look up. Both CZ and SK use 8-digit IČO; missing leading zeros are padded automatically (\"151700\" → \"00151700\"). Identifiers that do not exist in any queried registry simply produce no record (no error).",
 			"editor": "stringList",
 			"prefill": ["35757442", "04788290", "31322832"],
 			"default": [],
 			"uniqueItems": true,
 			"minItems": 1,
 			"maxItems": 10000,
-			"sectionCaption": "Vstup",
-			"sectionDescription": "Které IČO stáhnout a odkud. Auto-režim zkusí každé IČO v obou zemích a uloží jen relevantní záznam — v praxi 2× requesty navíc, ale ušetří vám rozhodování."
+			"sectionCaption": "Input",
+			"sectionDescription": "What to look up. In auto mode every IČO is queried in both countries, so the run makes roughly twice as many requests; set country explicitly when you know the source country."
 		},
 		"country": {
-			"title": "Země zdroje",
+			"title": "Source country",
 			"type": "string",
-			"description": "DOPORUČENÍ: pokud znáte zemi všech IČO, nastavte explicitně. CZ a SK mají oba 8místné IČO a některá čísla se náhodou shodují s úplně jinou firmou ve druhé zemi (např. CZ 45274649 = ČEZ, SK 45274649 = ABC servis). V auto módu se uloží oba záznamy a CRM import bez kontroly země může dostat duplicity. Auto mód zkusí každé IČO v obou zemích (~2× requestů); CZ-only / SK-only ušetří compute units a vyhne se collision.",
+			"description": "CZ and SK both use 8-digit IČO and some numbers exist in both registries as different companies (e.g. 45274649 = ČEZ, a. s. in CZ and ABC - servis, s. r. o. in SK). In auto mode the Actor stores both records and the consumer must filter by country. Setting cz or sk halves the request count and avoids these collisions.",
 			"editor": "select",
 			"default": "auto",
 			"enum": ["auto", "cz", "sk"],
 			"enumTitles": [
-				"Auto-detekce (zkusí CZ i SK, riziko collision)",
-				"Pouze ČR (MSP rejstřík + ARES, doporučeno pro CZ batch)",
-				"Pouze SR (finstat.sk + RPO data.gov.sk, doporučeno pro SK batch)"
+				"Auto (queries both CZ and SK)",
+				"Czech Republic only (MSP + ARES)",
+				"Slovakia only (finstat.sk + RPO)"
 			]
 		},
 		"maxConcurrency": {
-			"title": "Max paralelních požadavků",
+			"title": "Max parallel requests",
 			"type": "integer",
-			"description": "Kolik IČO zpracovat současně. Vyšší = rychlejší, ale větší riziko rate-limit blokace zdrojů. Doporučeno 3–10 pro residential proxy, 1–3 bez proxy.",
+			"description": "How many IČOs to process in parallel. Higher values run faster but increase the chance of triggering rate limits at the source. The Actor was tested at concurrency 3 (local) and 5 (Apify cloud with residential proxy) without issues.",
 			"default": 5,
 			"minimum": 1,
 			"maximum": 50,
-			"sectionCaption": "Výkon a robustnost",
-			"sectionDescription": "Defaultní hodnoty fungují pro většinu use-cases. Snižte concurrency, pokud vidíte v logu časté HTTP 429 (rate limit)."
+			"sectionCaption": "Performance",
+			"sectionDescription": "Defaults are tuned for the test configuration. Lower concurrency if you see repeated HTTP 429 entries in the run log."
 		},
 		"maxRequestRetries": {
-			"title": "Max retry pokusů",
+			"title": "Max request retries",
 			"type": "integer",
-			"description": "Kolikrát opakovat neúspěšný request při dočasné chybě (network, 5xx, 429). Crawlee používá exponenciální backoff.",
+			"description": "Number of retries on transient errors (network, 5xx, 429). Crawlee applies exponential backoff. RPO HTTP 429 responses also honour the Retry-After header.",
 			"default": 3,
 			"minimum": 0,
 			"maximum": 10
 		},
 		"requestTimeoutSecs": {
-			"title": "Timeout requestu (sekundy)",
+			"title": "Request timeout (seconds)",
 			"type": "integer",
-			"description": "Maximální doba na jeden HTTP request. Pro pomalé sítě nebo vyšší zátěž zvyšte na 60. CZ subjekty (Playwright render) mají interní 3× násobek.",
+			"description": "Maximum time for a single HTTP request. CZ requests use a 3× internal multiplier because of the Playwright browser render of the MSP SPA.",
 			"default": 30,
 			"minimum": 5,
 			"maximum": 300
@@ -59,7 +59,7 @@
 		"proxyConfiguration": {
 			"title": "Apify Proxy",
 			"type": "object",
-			"description": "Doporučená skupina RESIDENTIAL — rotace IP per request obchází rate limit RPO (data.gov.sk) a snižuje riziko blokace finstat.sk při vyšší concurrency. Pro lokální vývoj bez Apify Proxy přístupu nastavte useApifyProxy: false.",
+			"description": "Default uses the RESIDENTIAL group. IP rotation per request reduces the chance of triggering the per-IP rate limit on RPO (data.gov.sk), where we observed HTTP 429 responses on consecutive anonymous calls. For local development without Apify Proxy access, set useApifyProxy: false.",
 			"editor": "proxy",
 			"default": {
 				"useApifyProxy": true,
@@ -69,8 +69,8 @@
 				"useApifyProxy": true,
 				"apifyProxyGroups": ["RESIDENTIAL"]
 			},
-			"sectionCaption": "Síť",
-			"sectionDescription": "Proxy konfigurace. Residential proxy zvyšuje cenu runu, ale je nutná pro batch větší než cca 10 IČO."
+			"sectionCaption": "Network",
+			"sectionDescription": "Proxy configuration. Residential proxy adds traffic cost; HTTP-only sources (ARES, RPO, finstat.sk) work without proxy at low concurrency, but the cloud test used residential proxy at concurrency 5."
 		}
 	},
 	"required": ["icos"]

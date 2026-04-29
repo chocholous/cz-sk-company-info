@@ -233,7 +233,7 @@ export const buildMspRecord = (rows, ico, sourceUrl) => {
 	const businessRaw = pickRaw("Předmět podnikání", "Předmět činnosti");
 
 	if (!name) {
-		log.warning(`MSP CZ: parser nenašel obchodní firmu pro IČO ${ico}.`);
+		log.warning(`MSP CZ: parser did not find a company name for IČO ${ico}.`);
 		log.debug(
 			`MSP CZ raw labels for ${ico}: ${JSON.stringify(rows.map((r) => r.label))}`,
 		);

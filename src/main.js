@@ -28,7 +28,7 @@ import { normalizeIco } from "./utils.js";
 await Actor.init();
 
 Actor.on("aborting", async () => {
-	log.warning("Actor aborting — provádím rychlé ukončení.");
+	log.warning("Actor aborting — performing quick shutdown.");
 	await wait(1000);
 	await Actor.exit();
 });
@@ -44,12 +44,12 @@ const {
 } = input;
 
 if (!Array.isArray(icos) || icos.length === 0) {
-	throw new Error("Vstup `icos` musí být neprázdné pole IČO.");
+	throw new Error("Input `icos` must be a non-empty array of IČOs.");
 }
 
 const proxyConfiguration = await Actor.createProxyConfiguration(proxyInput);
 log.info(
-	`Vstup: ${icos.length} IČO, country=${country}, concurrency=${maxConcurrency}`,
+	`Input: ${icos.length} IČO(s), country=${country}, concurrency=${maxConcurrency}`,
 );
 
 const skIcos = [];
@@ -67,7 +67,7 @@ for (const raw of icos) {
 const datasetWriter = async (record) => {
 	if (!record?.name) {
 		log.softFail(
-			`Přeskakuju IČO ${record?.ico} (${record?.country}) — nenalezena firma.`,
+			`Skipping IČO ${record?.ico} (${record?.country}) — company not found.`,
 		);
 		return;
 	}
@@ -96,7 +96,7 @@ const skCrawler = skQueue
 				// finstat.sk vrací HTTP 404 pro neexistující IČO, ale stránka se pořád vyrenderuje
 				// (pretty 404). V auto módu je 404 očekávaný stav — IČO je české → tiše skip.
 				if (response.statusCode === 404) {
-					log.debug(`SK ${ico}: nenalezeno na finstat.sk (HTTP 404).`);
+					log.debug(`SK ${ico}: not found on finstat.sk (HTTP 404).`);
 					return;
 				}
 				if (response.statusCode >= 400) {
@@ -114,7 +114,7 @@ const skCrawler = skQueue
 			},
 			failedRequestHandler({ request }) {
 				log.error(
-					`SK ${request.userData?.ico}: po ${maxRequestRetries} pokusech selhal request.`,
+					`SK ${request.userData?.ico}: request failed after ${maxRequestRetries} retries.`,
 				);
 			},
 		})
@@ -142,7 +142,7 @@ const czCrawler = czQueue
 					mspRecord = buildMspRecord(rows, ico, request.url);
 				} catch (err) {
 					log.debug(
-						`CZ ${ico}: MSP rejstřík nedostupný (${err.message}). Zkusíme ARES jako fallback.`,
+						`CZ ${ico}: MSP rejstřík unavailable (${err.message}). Falling back to ARES.`,
 					);
 				}
 				const aresData = await aresPromise;
@@ -150,7 +150,7 @@ const czCrawler = czQueue
 				// a ARES taky nic, IČO je neplatné. Jinak ARES poslouží jako primary.
 				if (!mspRecord?.name && !aresData?.name) {
 					log.softFail(
-						`CZ ${ico}: nenalezeno v MSP ani v ARES — IČO pravděpodobně neexistuje.`,
+						`CZ ${ico}: not found in MSP nor in ARES — IČO probably does not exist.`,
 					);
 					return;
 				}
@@ -162,7 +162,7 @@ const czCrawler = czQueue
 			},
 			failedRequestHandler({ request }) {
 				log.error(
-					`CZ ${request.userData?.ico}: po ${maxRequestRetries} pokusech selhal request.`,
+					`CZ ${request.userData?.ico}: request failed after ${maxRequestRetries} retries.`,
 				);
 			},
 		})
@@ -185,6 +185,6 @@ if (czQueue) await czQueue.addRequests(czRequests);
 
 await Promise.all([skCrawler?.run(), czCrawler?.run()].filter(Boolean));
 
-log.info("Hotovo.");
+log.info("Done.");
 
 await Actor.exit();

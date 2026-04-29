@@ -34,7 +34,7 @@ export const fetchRpo = async (
 					Number(response.headers["retry-after"]) || 2 ** attempt;
 				const waitMs = Math.min(retryAfter * 1000 + 500, 30_000);
 				log.debug(
-					`RPO ${ico}: 429 retry-after ${retryAfter}s (pokus ${attempt + 1}/${maxRetries}).`,
+					`RPO ${ico}: 429 retry-after ${retryAfter}s (attempt ${attempt + 1}/${maxRetries}).`,
 				);
 				await new Promise((r) => setTimeout(r, waitMs));
 				attempt += 1;
@@ -42,12 +42,12 @@ export const fetchRpo = async (
 			}
 			if (response.statusCode === 429) {
 				log.warning(
-					`RPO ${ico}: HTTP 429 i po ${maxRetries} retry. Subjekt přeskočen.`,
+					`RPO ${ico}: HTTP 429 even after ${maxRetries} retries. Subject skipped.`,
 				);
 				return null;
 			}
 			if (response.statusCode === 404 || !response.body?.results?.length) {
-				log.debug(`RPO ${ico}: subjekt nenalezen.`);
+				log.debug(`RPO ${ico}: subject not found.`);
 				return null;
 			}
 			if (response.statusCode >= 400) {

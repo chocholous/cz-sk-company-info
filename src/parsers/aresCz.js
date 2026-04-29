@@ -16,7 +16,7 @@ export const fetchAres = async (ico, { timeoutMs = 10_000 } = {}) => {
 			signal: controller.signal,
 		});
 		if (response.status === 404) {
-			log.debug(`ARES ${ico}: subjekt nenalezen.`);
+			log.debug(`ARES ${ico}: subject not found.`);
 			return null;
 		}
 		if (!response.ok) {
@@ -27,7 +27,7 @@ export const fetchAres = async (ico, { timeoutMs = 10_000 } = {}) => {
 		return mapAres(json);
 	} catch (err) {
 		if (err.name === "AbortError") {
-			log.warning(`ARES ${ico}: timeout po ${timeoutMs} ms.`);
+			log.warning(`ARES ${ico}: timeout after ${timeoutMs} ms.`);
 		} else {
 			log.warning(`ARES ${ico}: ${err.message}`);
 		}

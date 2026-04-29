@@ -4,7 +4,7 @@
 
 ## CZ/SK Company Info — Free IČO Lookup
 
-An Actor that extracts public company data for **Czech and Slovak businesses** using their IČO (8-digit business identifier). Combines 4 official sources in a single structured JSON output: **MSP rejstřík** (Czech business registry — statutory representatives, partners with shares, business activities), **ARES** (Czech economic register — DIČ, NACE codes, **insolvency flag**, VAT status, 6 registry states, freshness timestamp), **finstat.sk** (Slovak financials — 5-year revenue/profit/assets/equity history, debts and bankruptcy flags), and **RPO data.gov.sk** (Slovak legal entities register — name history, file number, last update date). Auto-detects country from IČO, falls back to ARES for state organizations and public universities not in the commercial registry, supports residential proxy rotation for higher concurrency, and returns pre-flat JSON ready for CRM/ERP imports or LLM agent contexts. Free, no signup, no API key required for any source.
+An Actor that extracts public company data for **Czech and Slovak businesses** using their IČO (8-digit business identifier). Combines 4 official sources in a single structured JSON output: **MSP rejstřík** (Czech business registry — statutory representatives, partners with shares, business activities), **ARES** (Czech economic register — DIČ, NACE codes, **insolvency flag**, VAT status, 6 registry states, last-update timestamp), **finstat.sk** (Slovak financials — up to 5 years of revenue/profit/assets/equity history, debts and bankruptcy flags), and **RPO data.gov.sk** (Slovak legal entities register — name history, file number, last-update date). In `auto` mode each IČO is queried in both countries; set `country` explicitly to query only one. CZ subjects fall back to ARES when the MSP commercial registry has no record (state organizations, public universities, ministries). Architecture: CheerioCrawler over HTTP for finstat.sk, PlaywrightCrawler for the MSP Vue/Nuxt SPA, direct HTTP JSON for ARES and RPO with `Retry-After` handling. Free, no signup, no API key required for any source.
 
 ## Use cases
 
@@ -82,15 +82,17 @@ The **Output** tab in Apify Console offers 4 specialized views: **Overview**, **
 
 ## Pricing
 
-Free Actor — pay only Apify **compute units** + **proxy traffic**. Real-world cost: **~$0.003 per IČO** (about 70 hellers / 0.03 zł), so 1000 IČOs ≈ $3. CZ subjects are slower (Playwright browser render of MSP SPA), SK subjects faster (HTTP only).
+Free Actor — you pay only for Apify **compute units** and **proxy traffic**.
+
+Measured in our own cloud test (build 0.2.1, 11 IČOs, residential proxy, 4 GB memory): the run took **1m 30s** and cost **$0.036** total — about **$0.003 per IČO** in this configuration. CZ subjects are slower than SK (PlaywrightCrawler avg 14.2 s/request vs CheerioCrawler avg 0.8 s/request) because the MSP portal is a Vue/Nuxt SPA that requires a browser render, while finstat.sk responds with static HTML.
 
 ## FAQ
 
 **Is scraping public registry data legal?**
 The Actor extracts only data that subjects have themselves published per disclosure law (commercial register CZ/SK, ARES, RPO). No login bypass, no protected data. For commercial use in the EU, follow GDPR — names of physical persons (directors, shareholders) are personal data.
 
-**How does this compare to Bisnode, finstat Premium, or Albertina?**
-Bisnode/D&B: ~25× more expensive but covers global firmographics + credit scores. finstat Premium: SK-only with full director history and credit ratings (~350 Kč/month). Albertina: CZ-only XML database (~30 000+ Kč/year). For identification, KYC and basic enrichment in both CZ and SK, this Actor matches their depth at marginal Apify cost.
+**Need full director history for SK, credit scores, or global firmographics?**
+This Actor focuses on free public sources. Paid alternatives that cover those gaps include finstat Premium (SK), Albertina (CZ), and Bisnode/D&B (global) — pricing varies by tier and is not part of this Actor.
 
 **Why is a record missing for a specific IČO?**
 Either IČO doesn't exist in any registry (returns no record) or the source page changed structure (returns null `name`). Report in Issues with the specific IČO.
@@ -99,7 +101,12 @@ Either IČO doesn't exist in any registry (returns no record) or the source page
 Yes — Apify REST API supports start runs, read datasets, and webhooks from anything that speaks HTTP. See the **API** tab for examples.
 
 **How fresh is the data?**
-ARES: typically daily sync. RPO: updated only when the subject changes (could be months for stable companies). finstat.sk: yearly after annual report publication (Q2-Q3). The `dataFreshness` field shows exact timestamps.
+The `dataFreshness` field on every record shows exact timestamps:
+- `aresUpdatedAt` — `datumAktualizace` reported by ARES for that subject
+- `rpoUpdatedAt` — `dbModificationDate` reported by RPO for that subject
+- `scrapedAt` — when this Actor run fetched the data
+
+In our 11-subject test these timestamps ranged from 2025-07-07 to 2026-04-22, so values for stable companies can be older than the date you run the Actor. Both ARES and RPO update the timestamp only when the subject record actually changes.
 
 ## Sources
 

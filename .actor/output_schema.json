@@ -1,11 +1,11 @@
 {
 	"actorOutputSchemaVersion": 1,
-	"title": "CZ/SK Company Info — výstup",
+	"title": "CZ/SK Company Info — output",
 	"properties": {
 		"dataset": {
 			"type": "string",
-			"title": "Dataset s firmami",
-			"description": "Stažené záznamy o firmách (1 řádek = 1 IČO).",
+			"title": "Company dataset",
+			"description": "One row per IČO (or two rows when an auto-mode IČO collision exists in both registries).",
 			"template": "{{links.apiDefaultDatasetUrl}}/items?clean=true"
 		}
 	}
