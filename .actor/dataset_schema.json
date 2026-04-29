@@ -22,7 +22,7 @@
 			},
 			"classification": {
 				"type": ["object", "null"],
-				"description": "Classification data. CZ: nace = primary NACE code from ARES (CZ-NACE 2008), naceCodes = full array of registered codes from ARES, region/district = ARES sídlo.kraj/okres, spisovaZnacka from MSP. SK: nace = single 4-digit NACE from finstat, spisovaZnacka from RPO. employeeCategory is populated only for some larger SK firms.",
+				"description": "Classification of the subject. nace is the primary NACE code, naceDescription its human-readable label, naceCodes lists all registered codes when available. region and district describe the seat. spisovaZnacka is the file number in the registry. employeeCategory is populated only for larger companies that report it.",
 				"properties": {
 					"nace": { "type": ["string", "null"] },
 					"naceDescription": { "type": ["string", "null"] },
@@ -38,7 +38,7 @@
 			},
 			"financials": {
 				"type": ["object", "null"],
-				"description": "Latest-year financial figures. SK firms: revenue/profit/assets/equity from finstat (typically a.s. and s.r.o. with a published statement). CZ firms: only registeredCapital from MSP rejstřík. Subjects with no disclosure obligation (SVJ, spolek, small s.r.o., state organizations) return null.",
+				"description": "Latest-year financial figures. SK companies typically return revenue, profit, assets, equity and currency. CZ companies typically return registered capital. Subjects with no disclosure obligation return null.",
 				"properties": {
 					"year": { "type": ["integer", "null"] },
 					"revenue": { "type": ["number", "null"] },
@@ -51,7 +51,7 @@
 			},
 			"financialHistory": {
 				"type": ["object", "null"],
-				"description": "Up to 5 years of financial history. SK ONLY, for subjects with a published statement (typically a.s. and larger s.r.o.). No free CZ equivalent exists. Each metric is an array of { year, value } points in chronological order.",
+				"description": "Up to 5 years of financial history. Returned for SK companies that publish annual statements (typically a.s. and larger s.r.o.). Each metric is an array of { year, value } points in chronological order.",
 				"properties": {
 					"revenue": {
 						"type": ["array", "null"],
@@ -77,7 +77,7 @@
 			},
 			"businessActivities": {
 				"type": ["object", "null"],
-				"description": "Business activities / scope of operation. CZ: trade licence (license) plus list of activities from MSP. SK: activities only, for subjects with active scope of operation in finstat. Foundations, associations, SVJ and state organizations are typically empty.",
+				"description": "Business activities / scope of operation. CZ companies typically return a trade licence (license) plus a list of registered activities. SK companies typically return the activities only. Foundations, associations, HOAs and public-sector subjects are typically empty.",
 				"properties": {
 					"license": { "type": ["string", "null"] },
 					"activities": {
@@ -88,7 +88,7 @@
 			},
 			"directors": {
 				"type": ["array", "null"],
-				"description": "Statutory body. CZ ONLY (from MSP rejstřík); finstat hides this behind a Premium subscription. Roles vary by entity type: Jednatel (s.r.o.), Předseda/Člen představenstva (a.s.), Předseda/Člen výboru (SVJ, spolek, družstvo), Předseda/Člen správní rady (nadace, ústav), Likvidátor, Prokurista. State organizations, ministries and public universities have no statutory body in ARES.",
+				"description": "Statutory body. Returned for CZ companies. Roles vary by entity type: Jednatel (s.r.o.), Předseda/Člen představenstva (a.s.), Předseda/Člen výboru (SVJ, spolek, družstvo), Předseda/Člen správní rady (nadace, ústav), Likvidátor, Prokurista.",
 				"items": {
 					"type": "object",
 					"properties": {
@@ -102,7 +102,7 @@
 			},
 			"partners": {
 				"type": ["array", "null"],
-				"description": "Shareholders / members and their stakes. CZ s.r.o. AND OTHER LEGAL FORMS WITH PUBLIC OWNERSHIP STRUCTURE only. Shareholders of large CZ a.s. are not here — they are private records held by the CDCP central depository. SK subjects have no data here (finstat hides ownership behind Premium). Each partner has a shares[] array with stake details.",
+				"description": "Shareholders / members and their stakes. Returned for CZ entities whose ownership is publicly listed (typically s.r.o. and other legal forms with a public ownership structure). Each partner has a shares[] array with stake details.",
 				"items": {
 					"type": "object",
 					"properties": {
@@ -127,7 +127,7 @@
 			},
 			"warnings": {
 				"type": ["object", "null"],
-				"description": "Risk flags for KYC / due diligence. CZ: hasInsolvency is derived from ARES (stavZdrojeIr). SK: hasInsolvency / hasDebts / hasTemporaryProtection are read from public flags on finstat.sk. The whole field is null only if no source could supply any of the flags.",
+				"description": "Risk flags for KYC and due diligence. CZ companies return hasInsolvency. SK companies return hasInsolvency, hasDebts and hasTemporaryProtection. The whole field is null only when no flag could be determined.",
 				"properties": {
 					"hasDebts": { "type": ["boolean", "null"] },
 					"hasInsolvency": { "type": ["boolean", "null"] },
@@ -136,7 +136,7 @@
 			},
 			"vatStatus": {
 				"type": ["object", "null"],
-				"description": "VAT registration status. CZ ONLY (from ARES stavZdrojeDph). active=true means an active VAT payer. The SK equivalent (icDph) is in the top-level identification fields.",
+				"description": "VAT registration status. Returned for CZ companies. active=true means an active VAT payer. For SK companies the equivalent identifier (icDph) is in the top-level identification fields.",
 				"properties": {
 					"active": { "type": ["boolean", "null"] },
 					"stateCode": { "type": ["string", "null"] }
@@ -144,7 +144,7 @@
 			},
 			"registrace": {
 				"type": ["object", "null"],
-				"description": "Status across the 6 CZ registries from ARES — CZ ONLY. Values: AKTIVNI / NEEXISTUJICI / ZRUSENI. ROS=Registr osob, VR=Veřejný rejstřík, RES=Registr ekonomických subjektů, RZP=Registr živnostenského podnikání, DPH=VAT payers, IR=insolvenční rejstřík (source of the insolvency flag).",
+				"description": "Status across six CZ public registries. Returned for CZ companies. Values: AKTIVNI / NEEXISTUJICI / ZRUSENI. Keys: ros (registry of persons), vr (commercial registry), res (registry of economic subjects), rzp (trade licensing registry), dph (VAT payers), ir (insolvency registry, source of the hasInsolvency flag).",
 				"properties": {
 					"ros": { "type": ["string", "null"] },
 					"vr": { "type": ["string", "null"] },
@@ -156,7 +156,7 @@
 			},
 			"nameHistory": {
 				"type": ["array", "null"],
-				"description": "History of company names. SK ONLY (from RPO data.gov.sk). Each entry is { name, validFrom, validTo }; validTo:null marks the currently valid name. Useful for auditing mergers, renames and brand changes.",
+				"description": "History of company names. Returned for SK companies. Each entry is { name, validFrom, validTo }; validTo:null marks the currently valid name. Useful for auditing mergers, renames and brand changes.",
 				"items": {
 					"type": "object",
 					"properties": {
@@ -168,11 +168,11 @@
 			},
 			"registrationOffice": {
 				"type": ["string", "null"],
-				"description": "Registry court / registration office. SK ONLY (from RPO). The CZ analogue is in classification.spisovaZnacka."
+				"description": "Registry court or registration office. Returned for SK companies. The CZ analogue is in classification.spisovaZnacka."
 			},
 			"dataFreshness": {
 				"type": ["object", "null"],
-				"description": "Timestamps for data freshness audit. aresUpdatedAt = datumAktualizace from ARES (only changes when the subject record is updated). rpoUpdatedAt = dbModificationDate from RPO (only changes on subject updates — values for stable companies can be months or years old). scrapedAt = when this Actor run fetched the data.",
+				"description": "Timestamps for data freshness audit. aresUpdatedAt is the last update timestamp of the CZ source record. rpoUpdatedAt is the last update timestamp of the SK source record. Both only change when the subject record itself changes, so values for stable companies can be months or years old. scrapedAt is when this Actor run fetched the data.",
 				"properties": {
 					"aresUpdatedAt": { "type": ["string", "null"] },
 					"rpoUpdatedAt": { "type": ["string", "null"] },
@@ -229,7 +229,7 @@
 					"warnings.hasDebts": { "label": "Debts", "format": "boolean" },
 					"vatStatus.active": { "label": "VAT payer", "format": "boolean" },
 					"dataFreshness.aresUpdatedAt": {
-						"label": "ARES updated",
+						"label": "CZ updated",
 						"format": "date"
 					},
 					"sourceUrl": { "label": "Source", "format": "link" },
@@ -272,11 +272,11 @@
 					"financials.currency": { "label": "Currency", "format": "text" },
 					"vatStatus.active": { "label": "VAT payer", "format": "boolean" },
 					"dataFreshness.aresUpdatedAt": {
-						"label": "ARES updated",
+						"label": "CZ updated",
 						"format": "date"
 					},
 					"dataFreshness.rpoUpdatedAt": {
-						"label": "RPO updated",
+						"label": "SK updated",
 						"format": "date"
 					}
 				}
@@ -284,7 +284,7 @@
 		},
 		"people": {
 			"title": "Directors & shareholders",
-			"description": "Statutory body and ownership structure (CZ only — sourced from MSP rejstřík).",
+			"description": "Statutory body and ownership structure (returned for CZ companies).",
 			"transformation": {
 				"fields": ["ico", "country", "name", "directors", "partners"]
 			},
@@ -337,7 +337,7 @@
 					},
 					"dissolvedAt": { "label": "Dissolved", "format": "date" },
 					"dataFreshness.aresUpdatedAt": {
-						"label": "ARES updated",
+						"label": "CZ updated",
 						"format": "date"
 					}
 				}

@@ -20,14 +20,14 @@
 		"country": {
 			"title": "Source country",
 			"type": "string",
-			"description": "CZ and SK both use 8-digit IČO and some numbers exist in both registries as different companies (e.g. 45274649 = ČEZ, a. s. in CZ and ABC - servis, s. r. o. in SK). In auto mode the Actor stores both records and the consumer must filter by country. Setting cz or sk halves the request count and avoids these collisions.",
+			"description": "CZ and SK both use 8-digit IČO and some numbers exist in both countries as different companies (e.g. 45274649 = ČEZ, a. s. in CZ and ABC - servis, s. r. o. in SK). In auto mode the Actor stores both records and the consumer must filter by country. Setting cz or sk halves the request count and avoids these collisions.",
 			"editor": "select",
 			"default": "auto",
 			"enum": ["auto", "cz", "sk"],
 			"enumTitles": [
 				"Auto (queries both CZ and SK)",
-				"Czech Republic only (MSP + ARES)",
-				"Slovakia only (finstat.sk + RPO)"
+				"Czech Republic only",
+				"Slovakia only"
 			]
 		},
 		"maxConcurrency": {
@@ -43,7 +43,7 @@
 		"maxRequestRetries": {
 			"title": "Max request retries",
 			"type": "integer",
-			"description": "Number of retries on transient errors (network, 5xx, 429). Crawlee applies exponential backoff. RPO HTTP 429 responses also honour the Retry-After header.",
+			"description": "Number of retries on transient errors (network, 5xx, 429). The Actor uses exponential backoff and honours the Retry-After header where the server provides one.",
 			"default": 3,
 			"minimum": 0,
 			"maximum": 10
@@ -51,7 +51,7 @@
 		"requestTimeoutSecs": {
 			"title": "Request timeout (seconds)",
 			"type": "integer",
-			"description": "Maximum time for a single HTTP request. CZ requests use a 3× internal multiplier because of the Playwright browser render of the MSP SPA.",
+			"description": "Maximum time for a single HTTP request. CZ requests use an internal 3× multiplier because they include a browser render step.",
 			"default": 30,
 			"minimum": 5,
 			"maximum": 300
@@ -59,7 +59,7 @@
 		"proxyConfiguration": {
 			"title": "Apify Proxy",
 			"type": "object",
-			"description": "Default uses the RESIDENTIAL group. IP rotation per request reduces the chance of triggering the per-IP rate limit on RPO (data.gov.sk), where we observed HTTP 429 responses on consecutive anonymous calls. For local development without Apify Proxy access, set useApifyProxy: false.",
+			"description": "Default uses the RESIDENTIAL group. IP rotation per request reduces the chance of triggering per-IP rate limits at the queried public registries. For local development without Apify Proxy access, set useApifyProxy: false.",
 			"editor": "proxy",
 			"default": {
 				"useApifyProxy": true,
@@ -70,7 +70,7 @@
 				"apifyProxyGroups": ["RESIDENTIAL"]
 			},
 			"sectionCaption": "Network",
-			"sectionDescription": "Proxy configuration. Residential proxy adds traffic cost; HTTP-only sources (ARES, RPO, finstat.sk) work without proxy at low concurrency, but the cloud test used residential proxy at concurrency 5."
+			"sectionDescription": "Proxy configuration. Residential proxy adds traffic cost. The cloud test used the residential group at concurrency 5; lower concurrency works without proxy as well."
 		}
 	},
 	"required": ["icos"]

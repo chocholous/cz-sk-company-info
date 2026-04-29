@@ -3,7 +3,7 @@
 	"actorSpecification": 1,
 	"name": "cz-sk-company-info",
 	"title": "CZ/SK Company Info — Free IČO Lookup",
-	"description": "Look up Czech and Slovak companies by IČO. Combines MSP, ARES, finstat.sk and RPO into one JSON: identification, NACE, statutory body and shareholders (CZ), 5-year financial history (SK), insolvency flag, VAT status. No API key. For B2B prospecting, KYC, due diligence, CRM enrichment.",
+	"description": "Look up Czech and Slovak companies by IČO. One structured JSON record per company with identification, NACE, address, statutory body, shareholders, financials, multi-year history, business activities, risk flags and VAT status. No API key. For B2B prospecting, KYC, due diligence and CRM enrichment.",
 	"version": "0.2",
 	"buildTag": "latest",
 	"categories": ["BUSINESS", "LEAD_GENERATION", "DEVELOPER_TOOLS"],
