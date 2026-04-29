@@ -54,7 +54,3 @@ One JSON record per company. The full dataset is downloadable as JSON, JSONL, CS
 ## FAQ
 
 **Why is a record missing for a specific IČO?** Either the IČO does not exist or the lookup did not succeed (returns a `null` name). Open an Issue with the IČO.
-
-**Is it legal?** All data comes from public registries that publish it under disclosure laws. Names of physical persons are personal data; the GDPR applies if you use the output commercially in the EU.
-
-**Can I call it from my own app?** Yes — use the Apify REST API. See the **API** tab.
