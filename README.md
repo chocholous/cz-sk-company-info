@@ -1,140 +1,45 @@
 <!-- H1 generuje Apify Store automaticky z `title` v actor.json. -->
 
-> **Lookup firem v ČR a SR podle IČO.** Strukturovaný JSON ze 4 oficiálních zdrojů — bez API klíče, bez Premium předplatného.
+> **Bulk lookup CZ & SK companies by IČO** from 4 official registries. No API key. AI-ready JSON.
 
-## Co dělá CZ/SK Company Info?
+## CZ/SK Company Info — Free IČO Lookup
 
-Stahuje **veřejné údaje o firmách v Česku a na Slovensku** podle IČO. Kombinuje **čtyři oficiální registry** v jediném strukturovaném JSON výstupu:
+An Actor that extracts public company data for **Czech and Slovak businesses** using their IČO (8-digit business identifier). Combines 4 official sources in a single structured JSON output: **MSP rejstřík** (Czech business registry — statutory representatives, partners with shares, business activities), **ARES** (Czech economic register — DIČ, NACE codes, **insolvency flag**, VAT status, 6 registry states, freshness timestamp), **finstat.sk** (Slovak financials — 5-year revenue/profit/assets/equity history, debts and bankruptcy flags), and **RPO data.gov.sk** (Slovak legal entities register — name history, file number, last update date). Auto-detects country from IČO, falls back to ARES for state organizations and public universities not in the commercial registry, supports residential proxy rotation for higher concurrency, and returns pre-flat JSON ready for CRM/ERP imports or LLM agent contexts. Free, no signup, no API key required for any source.
 
-| Země | Zdroj | Co přidá |
-|---|---|---|
-| 🇨🇿 CZ | [Veřejný rejstřík MSP](https://verejnerejstriky.msp.gov.cz) | Statutáři, společníci s podíly, předmět podnikání, spisová značka |
-| 🇨🇿 CZ | [ARES](https://ares.gov.cz) | DIČ, NACE kódy, **insolvence flag**, DPH status, 6 stavů registrů, čerstvost |
-| 🇸🇰 SK | [finstat.sk](https://www.finstat.sk) | **5letá finanční historie**, flagy konkurz/dluhy, předměty podnikania |
-| 🇸🇰 SK | [RPO data.gov.sk](https://data.gov.sk) | Historie obchodních jmen, spisová značka, dbModificationDate |
+## Use cases
 
-**Není to** plnohodnotný klon Bisnode/Albertina — je to **rychlý lookup** pro identifikaci, KYC, sales prospecting a obohacení dat v CRM.
+- **Sales prospecting & lead enrichment** — add NACE codes, location, financials, and warning flags to B2B lead lists for segmentation and scoring
+- **KYC & due diligence** — check insolvency flag, VAT status, registry states, and shareholder structure before signing a contract or onboarding a vendor
+- **Portfolio monitoring** — schedule daily/weekly cron, alert on `warnings.hasInsolvency` flips or `dataFreshness` changes for monitored IČOs
+- **CRM/ERP enrichment** — nightly batch syncs CRM records (Pipedrive, HubSpot, Salesforce) with fresh ARES data via Apify webhook → Make/Zapier
+- **AI agents (RAG, function calling)** — structured pre-flat JSON ideal as tool output for LLMs reasoning about ownership, financials, or compliance status
+- **Research & journalism** — bulk lookup historical name changes (SK), file numbers, registered offices for cross-referencing public records
 
-## Proč použít CZ/SK Company Info?
+## What you get for which subject type
 
-- 🌍 **Dvě země, jeden request** — CZ i SK firmy v jedné dávce.
-- 🔓 **Žádný API klíč k cílovým službám** — jen IČO.
-- 🚨 **Insolvence flag** přímo z oficiálního zdroje (ARES).
-- 📅 **Audit čerstvosti** — pole `dataFreshness` ti řekne, jak staré data jsou (ARES typicky denní update, RPO při změně).
-- ⚙️ **Apify integrace:** plánování (cron), Webhook API, Make/Zapier/n8n, residential proxy, monitoring.
-- 🤖 **AI-ready JSON** — strukturovaný, pre-flat, ideální jako kontext pro LLM agenty (RAG, function calling).
+Empirical coverage from a test of 11 diverse subjects:
 
-## Srovnání s konkurencí
-
-| Vlastnost | **CZ/SK Company Info** | Bisnode / Dun & Bradstreet | finstat Premium | Albertina |
-|---|---|---|---|---|
-| Cena | Jen Apify compute units | ~1 000 Kč / firma | 350+ Kč / měs | 30 000+ Kč / rok |
-| Kombinace CZ+SK | ✅ | ✅ | ❌ jen SK | ❌ jen CZ |
-| API klíč | ❌ není potřeba | ✅ vyžaduje smlouvu | ✅ | ✅ |
-| Statutáři & společníci (CZ) | ✅ | ✅ | ❌ | ✅ |
-| 5letá finanční historie (SK) | ✅ | ✅ | ✅ | ❌ |
-| Insolvence flag | ✅ z ARES | ✅ | ✅ | ✅ |
-| Strukturovaný JSON | ✅ | ✅ | JSON/XML | XML |
-| Schedule + webhooks | ✅ Apify | ❌ | ❌ | ❌ |
-| Open source | ✅ | ❌ | ❌ | ❌ |
-
-**Závěr:** Pro identifikaci, KYC a obohacení dat dáváme srovnatelnou hloubku jako placené nástroje za cenu Apify cloudu (typicky < 1 Kč / IČO).
-
-## Jaká data CZ/SK Company Info extrahuje?
-
-| Pole | Typ | Popis |
-|---|---|---|
-| `ico` | string | IČO (8 číslic, doplněno nulami) |
-| `country` | `cz` / `sk` | Země zdroje |
-| `name` | string | Aktuální obchodní název |
-| `legalForm` | string | Právní forma |
-| `establishedAt` / `dissolvedAt` | datum | Vznik / zánik |
-| `dic` / `icDph` | string | Daňová identifikace, IČ DPH |
-| `address` | objekt | Rozparsované sídlo: `full`, `street`, `zip`, `city` |
-| `classification` | objekt | NACE kód + popis, NACE kódy (CZ), kraj, okres, spisová značka |
-| `financials` | objekt | Poslední rok: `revenue`, `profit`, `assets`, `equity`, `currency` |
-| **`financialHistory`** | objekt | 5letá řada `revenue/profit/assets/liabilities` (jen SK) |
-| **`businessActivities`** | objekt | `license` + `activities[]` — předmět podnikání |
-| **`directors`** | array | Statutáři: `role`, `name`, `birthDate`, `address`, `sinceDate` (jen CZ) |
-| **`partners`** | array | Společníci s `shares[]` (vklad, podíl, druh) — jen CZ |
-| **`warnings`** | objekt | `hasInsolvency`, `hasDebts`, `hasTemporaryProtection` |
-| **`vatStatus`** | objekt | DPH plátce — `active`, `stateCode` (CZ z ARES) |
-| **`registrace`** | objekt | Stavy 6 CZ registrů (ROS/VR/RES/RZP/DPH/IR) |
-| **`nameHistory`** | array | Historie obchodních jmen (SK z RPO) |
-| **`dataFreshness`** | objekt | `aresUpdatedAt`, `rpoUpdatedAt`, `scrapedAt` |
-| `sourceUrl` / `scrapedAt` | string | Odkaz a čas stažení |
-
-> **Poznámka k financím:** finstat.sk publikuje finanční ukazatele jen u firem, které mají povinnost zveřejnit účetní závěrku ve Sbírce listin (typicky **a.s.**, **nadace**, větší **s.r.o.**). Malé s.r.o. a živnostníci budou mít `financials: null`.
-
-## Co dostanete pro jaký typ subjektu
-
-Pokrytí závisí na typu subjektu a registru, ze kterého actor čerpá. Tabulka odráží **empirický test reálných firem** (ne teoretické možnosti):
-
-| Typ subjektu | Identif. + adresa | NACE | Statutáři | Společníci | Finance | 5letá historie | Warnings | Audit |
+| Subject type | Identification | Address | NACE | Directors | Shareholders | Financials | 5y history | Warnings |
 |---|---|---|---|---|---|---|---|---|
-| 🇨🇿 **a.s.** velká (ČEZ) | ✅ | ✅ | ✅ představenstvo | — | kapitál | — | ✅ | ✅ ARES |
-| 🇨🇿 **s.r.o.** (Apify) | ✅ | ✅ | ✅ jednatelé | ✅ s podíly | kapitál | — | ✅ | ✅ ARES |
-| 🇨🇿 **nadace** | ✅ | ✅ | ✅ správní rada | — | — | — | ✅ | ✅ ARES |
-| 🇨🇿 **SVJ** | ✅ | ✅ | ✅ výbor | — | — | — | ✅ | ✅ ARES |
-| 🇨🇿 **spolek** | ✅ | ✅ | ✅ předseda/výbor | — | — | — | ✅ | ✅ ARES |
-| 🇨🇿 **veřejná VŠ / státní org** | ✅ ARES | částečně | — není v MSP | — | — | — | ✅ ARES | ✅ ARES |
-| 🇸🇰 **a.s.** velká (VW, Allianz) | ✅ | ✅ | — finstat ne | — | ✅ kompletní | ✅ 5 let | ✅ flagy | ✅ RPO |
-| 🇸🇰 **s.r.o.** (ESET) | ✅ | ✅ | — finstat ne | — | ✅ kompletní | ✅ 5 let | ✅ | ✅ RPO |
-| 🇸🇰 **nadácia** | ✅ | ✅ | — | — | rok jen | — | ✅ | ✅ RPO |
+| 🇨🇿 a.s. (large) | ✅ | ✅ | ✅ | ✅ board | — CDCP | capital | — | ✅ |
+| 🇨🇿 s.r.o. | ✅ | ✅ | ✅ | ✅ executives | ✅ with shares | capital | — | ✅ |
+| 🇨🇿 nadace, SVJ, spolek | ✅ | ✅ | ✅ | ✅ board/committee | — | — | — | ✅ |
+| 🇨🇿 public university / ministry | ✅ ARES | ✅ ARES | partial | — not in MSP | — | — | — | ✅ ARES |
+| 🇸🇰 a.s. / s.r.o. | ✅ | ✅ | ✅ | — Premium-only | — Premium-only | ✅ full | ✅ 5 years | ✅ |
+| 🇸🇰 nadácia | ✅ | ✅ | ✅ | — | — | year only | — | ✅ |
 
-**Co je systémově nemožné** (nedáme to ani my, ani konkurence ze zdarma zdrojů):
-- Akcionáři velkých CZ a.s. — jsou neveřejní v CDCP
-- 5letá finanční historie pro CZ subjekty — finstat.sk je jen pro SK; ČR ekvivalent zdarma neexistuje
-- Statutáři pro SK subjekty — finstat skrývá za Premium
-
-**Co naopak dostanete navíc** oproti default expectation:
-- **CZ státní organizace, ministerstva, veřejné VŠ, příspěvkové organizace** — actor je dohledá přes ARES API i když nejsou v obchodním rejstříku (od v0.1.3)
-- **SVJ a spolky** — statutární orgán z MSP rejstříku se správně rozparsuje na role (Předseda, Členové výboru atd.)
-
-## Use-cases
-
-### 💼 Sales prospecting & lead enrichment
-Stahování firmografie (NACE, kraj, právní forma, finance) pro segmentaci a scoring. Kombinace s LinkedIn / web scraperem dává komplexní leads database.
-
-### ✅ KYC & due-diligence
-Insolvence flag, DPH plátce status, stav v 6 registrech, společníci s podíly — minimum vendor risk informací pro CRM/ERP.
-
-### 📊 Portfolio monitoring
-Schedule s denním/týdenním cronem hlídá změny `dataFreshness` a `warnings.hasInsolvency` u sledovaných IČO. Webhook posílá alert do Slack/Teams.
-
-### 🤖 AI agenti (RAG, function calling)
-Strukturovaný JSON je přímo použitelný jako tool output pro LLM. Agent dostane kompletní firemní profil, může uvažovat o vztazích (statutáři, vlastnická struktura).
-
-### 🔄 CRM/ERP synchronizace
-Nightly batch obohacuje záznamy v Pipedrive/HubSpot/Salesforce o čerstvá data. Apify Webhook → Make/Zapier scénář → CRM API.
-
-## Jak naskripovat CZ/SK firmy
-
-1. **Otevři záložku Input** v Apify Console.
-2. Vlož **seznam IČO** (8místných čísel; nuly se doplní automaticky).
-3. Volitelně omez `country` na `cz` nebo `sk`, pokud znáš zdroj všech IČO — ušetříš ~50 % compute units.
-4. Doporučujeme **Apify Proxy → RESIDENTIAL** (default).
-5. **Spusť** — actor pojede paralelně přes všechny zdroje a uloží 1 záznam = 1 firma do datasetu.
-
-## Kolik to stojí?
-
-- **Lokální vývoj** (`apify run`): zdarma, jen tvůj čas.
-- **Apify cloud:** poplatek za **compute units** + **proxy traffic**.
-- **Reálný odhad:** 100 IČO ≈ 5–15 minut runtime na 4 GB RAM. CZ subjekty pomalejší (browser render MSP), SK rychlejší (HTTP only).
-- **Cenový řád:** typicky **< 1 Kč na IČO** vč. residential proxy.
-- Pro **velký batch** (tisíce IČO) snižte concurrency a rozdělte do menších runs s schedule.
+**Systemic limits** (no free source provides these):
+- Shareholders of large CZ a.s. — held privately in CDCP central depository
+- 5-year financial history for CZ subjects — finstat.sk is SK-only; no free CZ equivalent
+- Directors for SK subjects — finstat.sk hides them behind Premium subscription
 
 ## Input
-
-Plné nastavení v záložce **Input**. Klíčová pole:
 
 ```json
 {
   "icos": ["35757442", "04788290", "31322832"],
   "country": "auto",
   "maxConcurrency": 5,
-  "maxRequestRetries": 3,
-  "requestTimeoutSecs": 30,
   "proxyConfiguration": {
     "useApifyProxy": true,
     "apifyProxyGroups": ["RESIDENTIAL"]
@@ -142,9 +47,13 @@ Plné nastavení v záložce **Input**. Klíčová pole:
 }
 ```
 
+**Tip:** Set `country` explicitly (`"cz"` or `"sk"`) for single-country batches — saves ~50% compute units and avoids IČO collision (CZ and SK both use 8-digit IČO; some numbers exist in both registries as different companies).
+
+See the **Input** tab for full configuration.
+
 ## Output
 
-Dataset stáhneš jako **JSON, JSONL, CSV, XLSX, HTML nebo XML**. Ukázkový SK záznam:
+Dataset downloadable as **JSON, JSONL, CSV, XLSX, HTML, or XML**. Sample SK record:
 
 ```json
 {
@@ -160,105 +69,41 @@ Dataset stáhneš jako **JSON, JSONL, CSV, XLSX, HTML nebo XML**. Ukázkový SK 
     "assets": 3319572000, "equity": 1519084000, "currency": "EUR"
   },
   "financialHistory": {
-    "revenue": [{ "year": 2020, "value": 9754823000 }, "..."],
-    "profit": [{ "year": 2020, "value": 206684000 }, "..."]
+    "revenue": [{ "year": 2020, "value": 9754823000 }, "..."]
   },
   "warnings": { "hasInsolvency": false, "hasDebts": false },
-  "dataFreshness": { "rpoUpdatedAt": "2026-04-22", "scrapedAt": "2026-04-28T..." },
-  "sourceUrl": "https://www.finstat.sk/35757442"
+  "dataFreshness": { "rpoUpdatedAt": "2026-04-22", "scrapedAt": "2026-04-28T..." }
 }
 ```
 
-CZ záznam navíc obsahuje pole `directors` (statutární orgán), `partners` (společníci s podíly), `businessActivities` (živnost + obory), `vatStatus`, `registrace`.
+CZ records add `directors`, `partners` (with `shares[]`), `vatStatus`, `registrace` (6 registry states).
 
-### Dataset views v Console
+The **Output** tab in Apify Console offers 4 specialized views: **Overview**, **Finance**, **People** (directors & partners), **Red flags** (insolvency, debts, VAT inactive).
 
-V záložce **Output** se Apify Console přepneš mezi 4 pohledy:
-- **Přehled** — nejdůležitější pole pro identifikaci a sales scoring
-- **Finance** — detailní finanční ukazatele + DPH status + čerstvost
-- **Statutáři & společníci** — vedení a vlastnická struktura (CZ)
-- **Red flags** — insolvence, dluhy, dočasná ochrana, zánik (KYC pohled)
+## Pricing
 
-## Integrace
-
-### Apify API (REST)
-
-```bash
-curl -X POST "https://api.apify.com/v2/acts/<ACTOR_ID>/runs?token=$APIFY_TOKEN" \
-  -H 'Content-Type: application/json' \
-  -d '{ "icos": ["35757442"], "country": "sk" }'
-```
-
-### Make / Integromat
-
-1. Modul **Apify → Run an Actor**
-2. Vyber `cz-sk-company-info`
-3. JSON input s polem `icos` mapovaným z předchozího kroku (např. CRM kontakty)
-4. **Apify → Get Dataset Items** — naváže výsledky pro další zpracování
-
-### Zapier
-
-Actor je dostupný přes **Apify** integraci. Triggery: schedule + run finished → Custom Webhook → tvoje aplikace.
-
-### n8n
-
-```yaml
-- node: Apify
-  operation: runActor
-  actorId: cz-sk-company-info
-  input: { icos: "{{ $json.companyIds }}", country: "auto" }
-```
-
-### Webhooks
-
-Apify Console → Actor → Webhooks → spustí se na `ACTOR.RUN.SUCCEEDED` a pošle URL datasetu do tvého endpointu.
-
-## Tips & best practices
-
-- 🐢 **Pro malou kontrolu** (1–5 IČO) drž `concurrency: 3` — minimalizuje rate-limit RPO.
-- 🚀 **Pro velký batch** zapni `RESIDENTIAL` proxy a `concurrency: 5–10` — rotace IP obejde per-IP limity.
-- 🇨🇿 **Pro 100 % CZ data** nastav `country: "cz"` — ušetříš ~50 % requestů a vyhneš se IČO collision (níže).
-- 📅 **Pro recurring monitoring** vytvoř Apify Schedule (cron) + Webhook → tvoje aplikace.
-- 🐛 Pokud `name` vychází `null`, IČO buď neexistuje, nebo cílová stránka změnila strukturu — nahlas v záložce Issues.
-- 💾 **Pro AI agenty** mapuj `financialHistory.revenue[]` jako sparkline data, `partners[]` jako graph nodes.
-
-### ⚠️ IČO collision v auto módu
-
-CZ a SK IČO mají stejný formát (8 číslic). Některá CZ IČO **náhodou existují i v SK** registru, ale představují úplně jinou firmu. Příklad: IČO `45274649` = ČEZ a.s. v ČR, ale taky *ABC - servis, s. r. o.* v SK.
-
-V auto módu actor uloží **oba záznamy** (každý s vlastním `country`). To může zkreslit data v CRM, pokud importuješ jen podle IČO bez kontroly země.
-
-**Řešení:** Pokud máš seznam IČO z jedné země, **vždy nastav `country` explicitně** (`cz` nebo `sk`). Auto mód nech jen pro skutečně smíšené dávky, kdy potřebuješ pokrytí obou zemí.
+Free Actor — pay only Apify **compute units** + **proxy traffic**. Real-world cost: **~$0.003 per IČO** (about 70 hellers / 0.03 zł), so 1000 IČOs ≈ $3. CZ subjects are slower (Playwright browser render of MSP SPA), SK subjects faster (HTTP only).
 
 ## FAQ
 
-**Je scraping veřejných údajů legální?**
-Náš Actor extrahuje výhradně data, která zveřejnitelé sami publikovali (firmy podle zákona o účetnictví, obchodní rejstřík ČR/SR, ARES, RPO). Nezpracováváme žádná data, která by nebyla veřejně dostupná bez přihlášení.
+**Is scraping public registry data legal?**
+The Actor extracts only data that subjects have themselves published per disclosure law (commercial register CZ/SK, ARES, RPO). No login bypass, no protected data. For commercial use in the EU, follow GDPR — names of physical persons (directors, shareholders) are personal data.
 
-> Naše Actory jsou etické a neextrahují žádná soukromá uživatelská data. Stahují pouze to, co subjekt sám zveřejnil podle platné legislativy. Pokud používáte výstup pro komerční účely v rámci EU, dodržujte GDPR a další lokální regulace — jména fyzických osob (statutáři, společníci) jsou osobní údaje a podléhají právní úpravě.
+**How does this compare to Bisnode, finstat Premium, or Albertina?**
+Bisnode/D&B: ~25× more expensive but covers global firmographics + credit scores. finstat Premium: SK-only with full director history and credit ratings (~350 Kč/month). Albertina: CZ-only XML database (~30 000+ Kč/year). For identification, KYC and basic enrichment in both CZ and SK, this Actor matches their depth at marginal Apify cost.
 
-**Co když actor selže pro konkrétní IČO?**
-- IČO neexistuje v daném registru → záznam se nevytvoří, není to chyba.
-- Cílová stránka změnila strukturu → nahlas v Issues s konkrétním IČO.
-- Rate limit RPO → zvedni `maxRequestRetries` nebo zapni residential proxy.
+**Why is a record missing for a specific IČO?**
+Either IČO doesn't exist in any registry (returns no record) or the source page changed structure (returns null `name`). Report in Issues with the specific IČO.
 
-**Můžu actor naplánovat?**
-Ano — Apify Schedules podporuje cron syntax. Užitečné pro denní obohacování nově registrovaných IČO v CRM nebo monitoring insolvence portfolia firem.
+**Can I use it from my own app without Apify Console?**
+Yes — Apify REST API supports start runs, read datasets, and webhooks from anything that speaks HTTP. See the **API** tab for examples.
 
-**Funguje pro velký batch (tisíce IČO)?**
-Ano, ale rozdělte do menších runs (každý ~500 IČO) a sledujte log na rate-limit chyby. ARES je rychlý, RPO má anonymní limit (residential proxy ho obchází).
+**How fresh is the data?**
+ARES: typically daily sync. RPO: updated only when the subject changes (could be months for stable companies). finstat.sk: yearly after annual report publication (Q2-Q3). The `dataFreshness` field shows exact timestamps.
 
-**Jaký je rozdíl mezi tímto actorem a finstat Premium API?**
-finstat Premium dává plnohodnotný API přístup k SK datům včetně historie statutářů, kreditního scoringu a real-time monitoringu — za 350+ Kč měsíčně. Tento actor pokrývá běžné identifikační + základní finanční use-cases pro CZ i SK za marginální cenu Apify cloudu, ale není to substitut pro plnotučný due-diligence nástroj.
+## Sources
 
-**Mohu volat actor z vlastní aplikace bez Apify Console?**
-Ano — viz sekce **Integrace** výše. Apify REST API umožňuje runs, dataset reading i webhooks z čehokoli, co umí HTTP.
-
-## Zdroje a licence
-
-- [finstat.sk](https://www.finstat.sk) — slovenský finančně-právní info portal (veřejná část)
-- [verejnerejstriky.msp.gov.cz](https://verejnerejstriky.msp.gov.cz) — veřejný obchodní rejstřík ČR (Ministerstvo spravedlnosti)
-- [ares.gov.cz](https://ares.gov.cz) — Administrativní registr ekonomických subjektů ČR
-- [data.gov.sk RPO](https://data.gov.sk) — Register právnických osôb SR (CC-BY licence)
-
-Source code dostupný v privátním GitHub repu.
+- [finstat.sk](https://www.finstat.sk) — Slovak financial-legal portal (public part)
+- [verejnerejstriky.msp.gov.cz](https://verejnerejstriky.msp.gov.cz) — Czech commercial registry (Ministry of Justice)
+- [ares.gov.cz](https://ares.gov.cz) — Czech administrative register of economic subjects
+- [data.gov.sk RPO](https://data.gov.sk) — Slovak Register of Legal Entities (CC-BY licence)
